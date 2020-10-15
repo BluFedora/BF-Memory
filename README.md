@@ -1,4 +1,4 @@
-# BluFedora's Memory Library
+# Memory Library
 
 A custom allocator library using polymorphism for a common (non-templated) interface.
 
