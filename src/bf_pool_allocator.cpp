@@ -67,14 +67,16 @@ namespace bf
 
   std::size_t PoolAllocatorImpl::indexOf(const void* ptr)
   {
-    const auto index = (std::size_t(ptr) - std::size_t(begin())) / m_BlockSize;
+    const std::size_t index = (std::size_t(ptr) - std::size_t(begin())) / m_BlockSize;
+
+    checkPointer(ptr);
 
     return index;
   }
 
   void* PoolAllocatorImpl::fromIndex(std::size_t index)
   {
-    void* ptr = begin() + m_BlockSize * index;
+    void* const ptr = begin() + m_BlockSize * index;
 
     checkPointer(ptr);
 
