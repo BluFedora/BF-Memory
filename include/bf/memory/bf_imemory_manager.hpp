@@ -1,6 +1,6 @@
 /******************************************************************************/
 /*!
-* @file   bifrost_imemory_manager.hpp
+* @file   bf_imemory_manager.hpp
 * @author Shareef Abdoul-Raheem (http://blufedora.github.io/)
 * @brief
 *  Outlines a basic interface for the various types of memory managers.
