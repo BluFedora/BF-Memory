@@ -16,6 +16,10 @@
 #include <assert.h> /* assert */
 #include <string.h> /* memcpy */
 
+// NOTE(SR):
+//   Usage of the bfBytesReadIntXDef and bfBytesWriteIntXDef macros cause this warning:
+// ReSharper disable CppClangTidyClangDiagnosticExtraSemi
+
 #define bfCast(e, T) ((T)(e))
 
 size_t bfAlignUpSize(size_t size, size_t required_alignment)
@@ -36,8 +40,9 @@ void* bfAlignUpPointer(const void* ptr, size_t required_alignment)
   return bfCast(bfCast(ptr, uintptr_t) + required_alignment_minus_one & ~required_alignment_minus_one, void*);
 }
 
-/* Good read on the various implementations and performance. 
-  [https://github.com/KabukiStarship/KabukiToolkit/wiki/Fastest-Method-to-Align-Pointers#21-proof-by-example] 
+/*
+  Good read on the various implementations and performance:
+    [https://github.com/KabukiStarship/KabukiToolkit/wiki/Fastest-Method-to-Align-Pointers#21-proof-by-example] 
 */
 void* bfStdAlign(size_t alignment, size_t size, void** ptr, size_t* space)
 {
@@ -74,12 +79,11 @@ uint8_t bfBytesReadUint8LE(const bfByte* bytes)
 
 uint16_t bfBytesReadUint16LE(const bfByte* bytes)
 {
-  return (bfCast(bytes[0], uint16_t) << 0) | (bfCast(bytes[1], uint16_t) << 8);
+  return bfCast((bfCast(bytes[0], uint16_t) << 0) | (bfCast(bytes[1], uint16_t) << 8), uint16_t);
 }
 
 uint32_t bfBytesReadUint32LE(const bfByte* bytes)
 {
-  /* u r jjjjjjjjjjjjjjjjjjjjj */
   const uint32_t result = (bfCast(bytes[0], uint32_t) << 0) |
                           (bfCast(bytes[1], uint32_t) << 8) |
                           (bfCast(bytes[2], uint32_t) << 16) |
@@ -103,7 +107,7 @@ uint8_t bfBytesReadUint8BE(const bfByte* bytes)
 
 uint16_t bfBytesReadUint16BE(const bfByte* bytes)
 {
-  return (bfCast(bytes[1], uint16_t) << 0) | (bfCast(bytes[0], uint16_t) << 8);
+  return bfCast((bfCast(bytes[1], uint16_t) << 0) | (bfCast(bytes[0], uint16_t) << 8), uint16_t);
 }
 
 uint32_t bfBytesReadUint32BE(const bfByte* bytes)
@@ -134,6 +138,7 @@ uint64_t bfBytesReadUint64BE(const bfByte* bytes)
     bfBytesReadIntX(uint##size##_t, int##size##_t, bfBytesReadUint##size##type); \
   }
 
+
 bfBytesReadIntXDef(8, LE);
 bfBytesReadIntXDef(16, LE);
 bfBytesReadIntXDef(32, LE);
@@ -142,6 +147,9 @@ bfBytesReadIntXDef(8, BE);
 bfBytesReadIntXDef(16, BE);
 bfBytesReadIntXDef(32, BE);
 bfBytesReadIntXDef(64, BE);
+
+#undef bfBytesReadIntXDef
+#undef bfBytesReadIntX
 
 void bfBytesWriteUint8LE(bfByte* bytes, const uint8_t value)
 {
@@ -226,3 +234,8 @@ bfBytesWriteIntXDef(8, BE);
 bfBytesWriteIntXDef(16, BE);
 bfBytesWriteIntXDef(32, BE);
 bfBytesWriteIntXDef(64, BE);
+
+#undef bfBytesWriteIntXDef
+#undef bfBytesWriteIntX
+
+#undef bfCast
