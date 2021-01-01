@@ -30,7 +30,7 @@ namespace bf
     const char* what() const noexcept(true) override;
   };
 
-  class LinearAllocator final : public MemoryManager
+  class LinearAllocator : public MemoryManager
   {
     friend class LinearAllocatorScope;
 
@@ -46,11 +46,27 @@ namespace bf
     size_t usedMemory() const { return m_MemoryOffset; }
 
     void  clear(void);
-    void* allocate(std::size_t size) override;
-    void  deallocate(void* ptr, std::size_t num_bytes) override;
+    void* allocate(std::size_t size) override final;
+    void  deallocate(void* ptr, std::size_t num_bytes) override final;
+
+    virtual ~LinearAllocator() = default;
 
    private:
     char* currentBlock() const;
+  };
+
+  template<std::size_t k_BufferSize>
+  class FixedLinearAllocator : public LinearAllocator
+  {
+   private:
+    char m_FixedBuffer[k_BufferSize];
+
+   public:
+    FixedLinearAllocator() :
+      LinearAllocator(m_FixedBuffer, k_BufferSize),
+      m_FixedBuffer{}
+    {
+    }
   };
 
   class LinearAllocatorScope final
