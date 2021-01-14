@@ -30,21 +30,4 @@ namespace bf
   {
     m_Impl.deallocate(ptr, num_bytes);
   }
-
-  NoFreeAllocator::NoFreeAllocator(IMemoryManager& real_allocator) :
-    m_Impl(real_allocator)
-  {
-  }
-
-  void* NoFreeAllocator::allocate(const std::size_t size)
-  {
-    return m_Impl.allocate(size);
-  }
-
-  void NoFreeAllocator::deallocate(void* ptr, std::size_t num_bytes)
-  {
-    (void)ptr;
-    (void)num_bytes;
-    // m_Impl.dealloc(ptr);
-  }
-}
+}  // namespace bf

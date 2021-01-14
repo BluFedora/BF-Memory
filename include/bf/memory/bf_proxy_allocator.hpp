@@ -34,22 +34,6 @@ namespace bf
    public:
     static constexpr std::size_t header_size = 0u;
   };
-
-  class NoFreeAllocator final : public IMemoryManager
-  {
-   private:
-    IMemoryManager& m_Impl;
-
-   public:
-    NoFreeAllocator(IMemoryManager& real_allocator);
-
-   public:
-    void* allocate(std::size_t size) override;
-    void  deallocate(void* ptr, std::size_t num_bytes) override;
-
-   public:
-    static constexpr std::size_t header_size = 0u;
-  };
-}  // namespace bifrost
+}  // namespace bf
 
 #endif /* BIFROST_PROXY_ALLOCATOR_HPP */

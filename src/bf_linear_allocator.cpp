@@ -21,11 +21,6 @@
 
 namespace bf
 {
-  const char* linear_allocator_free::what() const noexcept
-  {
-    return "LinearAllocator::dealloc was called but that is not allowed happen, all data must be freed at once with LinearAllocator::clear.";
-  }
-
   LinearAllocator::LinearAllocator(char* memory_block, const std::size_t memory_block_size) :
     MemoryManager(memory_block, memory_block_size),
     m_MemoryOffset(0)
@@ -60,7 +55,6 @@ namespace bf
 
   void LinearAllocator::deallocate(void*, std::size_t)
   {
-    throw linear_allocator_free();
   }
 
   char* LinearAllocator::currentBlock() const

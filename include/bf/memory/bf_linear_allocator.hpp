@@ -18,17 +18,9 @@
 
 #include "bf_imemory_manager.hpp" /* MemoryManager */
 
-#include <exception> /* exception */
-
 namespace bf
 {
   class LinearAllocatorScope;
-
-  class linear_allocator_free final : public std::exception
-  {
-   public:
-    const char* what() const noexcept(true) override;
-  };
 
   class LinearAllocator : public MemoryManager
   {
@@ -56,7 +48,7 @@ namespace bf
   };
 
   template<std::size_t k_BufferSize>
-  class FixedLinearAllocator : public LinearAllocator
+  class FixedLinearAllocator final : public LinearAllocator
   {
    private:
     char m_FixedBuffer[k_BufferSize];

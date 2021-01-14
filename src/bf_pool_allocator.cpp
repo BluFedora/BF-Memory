@@ -65,7 +65,7 @@ namespace bf
     m_PoolStart  = header;
   }
 
-  std::size_t PoolAllocatorImpl::indexOf(const void* ptr)
+  std::size_t PoolAllocatorImpl::indexOf(const void* ptr) const
   {
     const std::size_t index = (std::size_t(ptr) - std::size_t(begin())) / m_BlockSize;
 

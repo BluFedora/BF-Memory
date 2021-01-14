@@ -49,7 +49,7 @@ namespace bf
 
     void*       allocate(std::size_t size) override;
     void        deallocate(void* ptr, std::size_t num_bytes) override;
-    std::size_t indexOf(const void* ptr);
+    std::size_t indexOf(const void* ptr) const;
     void*       fromIndex(std::size_t index);  // The index must have been from 'indexOf'
     void        reset();
 
