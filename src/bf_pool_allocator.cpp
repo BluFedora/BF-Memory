@@ -53,7 +53,7 @@ namespace bf
   {
     checkPointer(ptr);
 
-    PoolHeader* const header = reinterpret_cast<PoolHeader*>(ptr);
+    PoolHeader* const header = static_cast<PoolHeader*>(ptr);
 
     assert(num_bytes == m_BlockSize);
 
@@ -98,4 +98,4 @@ namespace bf
 
     header->next = nullptr;
   }
-}  // namespace bifrost
+}  // namespace bf
