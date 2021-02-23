@@ -17,7 +17,7 @@
 
 // #include <new>    /* bad_alloc  */
 
-#include <cassert> // assert
+#include <cassert>  // assert
 
 namespace bf
 {
@@ -30,12 +30,10 @@ namespace bf
   void LinearAllocator::clear()
   {
 #ifdef BF_MEMORY_DEBUG_WIPE_MEMORY
-    if (m_MemoryOffset)
-    {
-      std::memset(begin(), BF_MEMORY_DEBUG_SIGNATURE, m_MemoryOffset);
-      m_MemoryOffset = 0;
-    }
+    std::memset(begin(), BF_MEMORY_DEBUG_SIGNATURE, m_MemoryOffset);
 #endif
+
+    m_MemoryOffset = 0;
   }
 
   void* LinearAllocator::allocate(const std::size_t size)
