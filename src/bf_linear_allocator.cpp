@@ -60,6 +60,20 @@ namespace bf
     return begin() + m_MemoryOffset;
   }
 
+  void LinearAllocatorSavePoint::save(LinearAllocator& allocator)
+  {
+    m_Allocator = &allocator;
+    m_OldOffset = allocator.m_MemoryOffset;
+  }
+
+  void LinearAllocatorSavePoint::restore()
+  {
+    assert(m_Allocator && "restore must be called after a call to save.");
+
+    m_Allocator->m_MemoryOffset = m_OldOffset;
+    m_Allocator                 = nullptr;
+  }
+
   LinearAllocatorScope::LinearAllocatorScope(LinearAllocator& allocator) :
     m_Allocator(&allocator),
     m_OldOffset(allocator.m_MemoryOffset)
@@ -74,6 +88,7 @@ namespace bf
 
   LinearAllocatorScope::~LinearAllocatorScope()
   {
+    // Could be null because of a move.
     if (m_Allocator)
     {
       m_Allocator->m_MemoryOffset = m_OldOffset;

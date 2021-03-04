@@ -10,21 +10,23 @@
 * @version 0.0.1
 * @date    2019-12-26
 *
-* @copyright Copyright (c) 2019-2020
+* @copyright Copyright (c) 2019-2021
 */
 /******************************************************************************/
-#ifndef BIFROST_LINEAR_ALLOCATOR_HPP
-#define BIFROST_LINEAR_ALLOCATOR_HPP
+#ifndef BF_LINEAR_ALLOCATOR_HPP
+#define BF_LINEAR_ALLOCATOR_HPP
 
 #include "bf_imemory_manager.hpp" /* MemoryManager */
 
 namespace bf
 {
   class LinearAllocatorScope;
+  class LinearAllocatorSavePoint;
 
   class LinearAllocator : public MemoryManager
   {
     friend class LinearAllocatorScope;
+    friend class LinearAllocatorSavePoint;
 
    public:
     static constexpr std::size_t header_size = 0u;
@@ -61,6 +63,17 @@ namespace bf
     }
   };
 
+  class LinearAllocatorSavePoint
+  {
+   private:
+    LinearAllocator* m_Allocator;
+    std::size_t      m_OldOffset;
+
+   public:
+    void save(LinearAllocator& allocator);
+    void restore();
+  };
+
   class LinearAllocatorScope final
   {
    private:
@@ -77,6 +90,7 @@ namespace bf
 
     ~LinearAllocatorScope();
   };
+
 }  // namespace bf
 
-#endif /* BIFROST_LINEAR_ALLOCATOR_HPP */
+#endif /* BF_LINEAR_ALLOCATOR_HPP */
