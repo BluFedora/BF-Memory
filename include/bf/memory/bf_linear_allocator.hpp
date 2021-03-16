@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*!
 * @file   bf_linear_allocator.hpp
-* @author Shareef Abdoul-Raheem (http://blufedora.github.io/)
+* @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
 * @brief
 *   This allocator is very good for temporary memory allocations throughout
 *   the frame. There is no individual deallocation but a whole clear operation

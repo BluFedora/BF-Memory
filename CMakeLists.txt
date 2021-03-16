@@ -24,6 +24,18 @@ target_include_directories(
 target_sources(
   "${PROJECT_NAME}_interface"
   INTERFACE
+    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_allocators.hpp"
+    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_crt_allocator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_freelist_allocator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_imemory_manager.hpp"
+    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_linear_allocator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_memory_utils.h"
+    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_pool_allocator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_proxy_allocator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_stack_allocator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_stl_allocator.hpp"
+
+    "${PROJECT_SOURCE_DIR}/src/bf_allocators.cpp"
     "${PROJECT_SOURCE_DIR}/src/bf_crt_allocator.cpp"
     "${PROJECT_SOURCE_DIR}/src/bf_freelist_allocator.cpp"
     "${PROJECT_SOURCE_DIR}/src/bf_imemory_manager.cpp"

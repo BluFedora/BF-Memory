@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*!
 * @file   bf_crt_allocator.hpp
-* @author Shareef Abdoul-Raheem (http://blufedora.github.io/)
+* @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
 * @brief
 *  This allocator is a wrapper around the built in memory allocator.
 *  Implemented using "malloc / calloc" and "free".
