@@ -1,14 +1,14 @@
 /******************************************************************************/
 /*!
  * @file   bf_memory_utils.h
- * @author Shareef Abdoul-Raheem (http://blufedora.github.io/)
+ * @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
  * @brief 
  *   Contains functions useful for low level memory manipulations.
  *
  * @version 0.0.1
  * @date    2020-03-22
  * 
- * @copyright Copyright (c) 2020
+ * @copyright Copyright (c) 2020-2021
  */
 /******************************************************************************/
 #ifndef BF_MEMORY_UTILS_HPP
@@ -53,6 +53,8 @@ void* bfStdAlign(size_t alignment, size_t size, void** ptr, size_t* space);
 /*
   (Little / Big) Endian Byte Helpers
     The signed versions of these functions assume 2s compliment.
+
+    Make sure the byte buffers are of the correct size for the data-type.
 */
 
 uint8_t  bfBytesReadUint8LE(const bfByte* bytes);
@@ -99,7 +101,7 @@ void bfBytesWriteInt64BE(bfByte* bytes, int64_t value);
 /*
   MIT License
 
-  Copyright (c) 2020 Shareef Abdoul-Raheem
+  Copyright (c) 2020-2021 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

@@ -1,14 +1,14 @@
 /******************************************************************************/
 /*!
 * @file   bf_imemory_manager.hpp
-* @author Shareef Abdoul-Raheem (http://blufedora.github.io/)
+* @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
 * @brief
 *  Outlines a basic interface for the various types of memory managers.
 *
 * @version 0.0.1
 * @date    2019-12-26
 *
-* @copyright Copyright (c) 2019-2020
+* @copyright Copyright (c) 2019-2021
 */
 /******************************************************************************/
 #ifndef BF_IMEMORY_MANAGER_HPP
@@ -464,7 +464,7 @@ namespace bf
     void        checkPointer(const void* ptr) const;
   };
 
-  class TempBuffer
+  class ScopedBuffer
   {
    private:
     IMemoryManager* m_Allocator;
@@ -472,37 +472,35 @@ namespace bf
     std::size_t     m_Size;
 
    public:
-    //
-    // Warning(SR):
+    // NOTE(SR):
     //   Make sure the passed in 'buffer' was allocated from 'allocator.allocate(...)'.
-    //
-    TempBuffer(IMemoryManager& allocator, char* buffer, std::size_t size) noexcept :
+    ScopedBuffer(IMemoryManager& allocator, char* buffer, std::size_t size) noexcept :
       m_Allocator{&allocator},
       m_Buffer{buffer},
       m_Size{size}
     {
     }
 
-    TempBuffer(IMemoryManager& allocator, std::size_t size) :
-      TempBuffer(allocator, static_cast<char*>(allocator.allocate(size)), size)
+    ScopedBuffer(IMemoryManager& allocator, std::size_t size) :
+      ScopedBuffer(allocator, static_cast<char*>(allocator.allocate(size)), size)
     {
     }
 
     // Disable copies
 
-    TempBuffer(const TempBuffer& rhs) = delete;
-    TempBuffer& operator=(const TempBuffer& rhs) = delete;
+    ScopedBuffer(const ScopedBuffer& rhs) = delete;
+    ScopedBuffer& operator=(const ScopedBuffer& rhs) = delete;
 
     // Move
 
-    TempBuffer(TempBuffer&& rhs) noexcept :
+    ScopedBuffer(ScopedBuffer&& rhs) noexcept :
       m_Allocator{std::exchange(rhs.m_Allocator, nullptr)},
       m_Buffer{std::exchange(rhs.m_Buffer, nullptr)},
       m_Size{std::exchange(rhs.m_Size, 0u)}
     {
     }
 
-    TempBuffer& operator=(TempBuffer&& rhs) noexcept
+    ScopedBuffer& operator=(ScopedBuffer&& rhs) noexcept
     {
       if (this != &rhs)
       {
@@ -520,7 +518,7 @@ namespace bf
     [[nodiscard]] char*           buffer() const noexcept { return m_Buffer; }
     [[nodiscard]] std::size_t     size() const noexcept { return m_Size; }
 
-    ~TempBuffer() noexcept
+    ~ScopedBuffer() noexcept
     {
       if (m_Allocator)
       {
@@ -531,3 +529,29 @@ namespace bf
 }  // namespace bf
 
 #endif /* BF_IMEMORY_MANAGER_HPP */
+
+/******************************************************************************/
+/*
+  MIT License
+
+  Copyright (c) 2019-2021 Shareef Abdoul-Raheem
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+/******************************************************************************/

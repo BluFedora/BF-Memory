@@ -1,9 +1,9 @@
 /******************************************************************************/
 /*!
  * @file   bf_memory_utils.c
- * @author Shareef Abdoul-Raheem (http://blufedora.github.io/)
+ * @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
  * @brief 
- *   Contains functions useful for low level memory manipulations.   
+ *   Contains functions useful for low level memory manipulations.
  *
  * @version 0.0.1
  * @date    2020-03-22
@@ -41,14 +41,14 @@ void* bfAlignUpPointer(const void* ptr, size_t required_alignment)
 }
 
 /*
-  Good read on the various implementations and performance:
+  Good read on the various implementations and performance characteristics:
     [https://github.com/KabukiStarship/KabukiToolkit/wiki/Fastest-Method-to-Align-Pointers#21-proof-by-example] 
 */
 void* bfStdAlign(size_t alignment, size_t size, void** ptr, size_t* space)
 {
-  assert(alignment > 0 && (alignment & (alignment - 1)) == 0 && "bfStdAlign:: The alignment must be a non-zero power of two.");
-  assert(ptr && "Passed in pointer must not be null");
-  assert(space && "Passed in space must not be null");
+  assert(alignment > 0 && (alignment & (alignment - 1)) == 0 && "The alignment must be a non-zero power of two.");
+  assert(ptr && "Passed in pointer must not be null.");
+  assert(space && "Passed in space must not be null.");
 
   void* const     aligned_ptr = bfAlignUpPointer(*ptr, alignment);
   const uintptr_t offset      = bfCast(aligned_ptr, char*) - bfCast(*ptr, char*);

@@ -85,12 +85,12 @@ void ::operator delete[](void* ptr, const std::nothrow_t&) noexcept
 
 namespace bf
 {
-  CAllocator::CAllocator() :
+  CRTAllocator::CRTAllocator() :
     IMemoryManager()
   {
   }
 
-  void* CAllocator::allocate(std::size_t size)
+  void* CRTAllocator::allocate(std::size_t size)
   {
 #if 0
     return std::calloc(1, size);
@@ -99,7 +99,7 @@ namespace bf
 #endif
   }
 
-  void CAllocator::deallocate(void* ptr, std::size_t /* num_bytes */)
+  void CRTAllocator::deallocate(void* ptr, std::size_t /* num_bytes */)
   {
     std::free(ptr);
   }

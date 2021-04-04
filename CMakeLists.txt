@@ -3,7 +3,7 @@
 #                              BF MEMORY PROJECT                               #
 #                                                                              #
 ################################################################################
-###  CMakeList.txt : Memory Sub Project of the Engine                        ###
+###  CMakeList.txt : Custom Memory Allococator Library For C++14 or above.   ###
 ################################################################################
 
 cmake_minimum_required(VERSION 3.12)
