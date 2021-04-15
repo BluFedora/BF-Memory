@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*!
 * @file   bf_stack_allocator.cpp
-* @author Shareef Abdoul-Raheem (http://blufedora.github.io/)
+* @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
 * @brief
 *   This allocator is a designed for allocations where you can guarantee
 *   deallocation is in a LIFO (Last in First Out) order in return you get
@@ -10,7 +10,7 @@
 * @version 0.0.1
 * @date    2019-12-26
 *
-* @copyright Copyright (c) 2019
+* @copyright Copyright (c) 2019-2021
 */
 /******************************************************************************/
 #include "bf/memory/bf_stack_allocator.hpp"
@@ -58,8 +58,7 @@ namespace bf
     const auto   full_size   = (header->block_size + header->align_size);
     const auto   block_start = reinterpret_cast<char*>(header) - header->align_size;
 
-    assert(header->block_size == num_bytes);
-
+    assert(header->block_size == num_bytes && "Incorrect number of bytes passed in.");
     assert((block_start + full_size) == m_StackPtr &&
            "StackAllocator::dealloc : For this type of allocator you MUST deallocate in the reverse order of allocation.");
 
@@ -70,4 +69,30 @@ namespace bf
     std::memset(block_start, BF_MEMORY_DEBUG_SIGNATURE, full_size);
 #endif
   }
-}  // namespace bifrost
+}  // namespace bf
+
+/******************************************************************************/
+/*
+  MIT License
+
+  Copyright (c) 2019-2021 Shareef Abdoul-Raheem
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+/******************************************************************************/

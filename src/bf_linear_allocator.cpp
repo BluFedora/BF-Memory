@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*!
 * @file   bf_linear_allocator.cpp
-* @author Shareef Abdoul-Raheem (http://blufedora.github.io/)
+* @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
 * @brief
 *   This allocator is very good for temporary memory allocations throughout
 *   the frame. There is no individual deallocation but a whole clear operation
@@ -10,7 +10,7 @@
 * @version 0.0.1
 * @date    2019-12-26
 *
-* @copyright Copyright (c) 2019
+* @copyright Copyright (c) 2019-2021
 */
 /******************************************************************************/
 #include "bf/memory/bf_linear_allocator.hpp"
@@ -23,7 +23,7 @@ namespace bf
 {
   LinearAllocator::LinearAllocator(char* memory_block, const std::size_t memory_block_size) :
     MemoryManager(memory_block, memory_block_size),
-    m_MemoryOffset(0)
+    m_MemoryOffset(0u)
   {
   }
 
@@ -38,10 +38,10 @@ namespace bf
 
   void* LinearAllocator::allocate(const std::size_t size)
   {
-    if ((m_MemoryOffset + size) < this->size())
-    {
-      void* ptr = currentBlock();
+    char* const ptr = currentBlock();
 
+    if ((ptr + size) < end())
+    {
       m_MemoryOffset += size;
       return ptr;
     }
@@ -53,6 +53,7 @@ namespace bf
 
   void LinearAllocator::deallocate(void*, std::size_t)
   {
+    /* NO-OP */
   }
 
   char* LinearAllocator::currentBlock() const
@@ -68,30 +69,35 @@ namespace bf
 
   void LinearAllocatorSavePoint::restore()
   {
-    assert(m_Allocator && "restore must be called after a call to save.");
+    assert(m_Allocator && "must be called after a call to save.");
 
     m_Allocator->m_MemoryOffset = m_OldOffset;
     m_Allocator                 = nullptr;
   }
-
-  LinearAllocatorScope::LinearAllocatorScope(LinearAllocator& allocator) :
-    m_Allocator(&allocator),
-    m_OldOffset(allocator.m_MemoryOffset)
-  {
-  }
-
-  LinearAllocatorScope::LinearAllocatorScope(LinearAllocatorScope&& rhs) noexcept :
-    m_Allocator{std::exchange(rhs.m_Allocator, nullptr)},
-    m_OldOffset{rhs.m_OldOffset}
-  {
-  }
-
-  LinearAllocatorScope::~LinearAllocatorScope()
-  {
-    // Could be null because of a move.
-    if (m_Allocator)
-    {
-      m_Allocator->m_MemoryOffset = m_OldOffset;
-    }
-  }
 }  // namespace bf
+
+/******************************************************************************/
+/*
+  MIT License
+
+  Copyright (c) 2019-2021 Shareef Abdoul-Raheem
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+/******************************************************************************/
