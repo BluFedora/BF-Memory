@@ -46,6 +46,11 @@ namespace bf
     }
 
     throw std::bad_alloc();
+
+#if _MSC_VER
+    __debugbreak();
+#endif
+
     return nullptr;
   }
 

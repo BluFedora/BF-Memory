@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*!
 * @file   bf_pool_allocator.hpp
-* @author Shareef Abdoul-Raheem (http://blufedora.github.io/)
+* @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
 * @brief
 *   This allocator is a designed for static (known at compile time)
 *   pools of objects. Features O(1) allocation and O(1) deletion.
@@ -9,7 +9,7 @@
 * @version 0.0.1
 * @date    2019-12-26
 *
-* @copyright Copyright (c) 2019-2020
+* @copyright Copyright (c) 2019-2021
 */
 /******************************************************************************/
 #ifndef BF_POOL_ALLOCATOR_HPP
@@ -47,8 +47,8 @@ namespace bf
    public:
     PoolAllocatorImpl(char* memory_block, std::size_t memory_block_size, std::size_t sizeof_block, std::size_t alignof_block);
 
-    void*       allocate(std::size_t size) override;
-    void        deallocate(void* ptr, std::size_t num_bytes) override;
+    void*       allocate(std::size_t size) override final;
+    void        deallocate(void* ptr, std::size_t num_bytes) override final;
     std::size_t indexOf(const void* ptr) const;
     void*       fromIndex(std::size_t index);  // The index must have been from 'indexOf'
     void        reset();
@@ -60,7 +60,7 @@ namespace bf
   };
 
   template<typename T, std::size_t num_elements>
-  class PoolAllocator : public PoolAllocatorImpl
+  class PoolAllocator final : public PoolAllocatorImpl
   {
    private:
     template<size_t arg1, size_t... others>
@@ -89,7 +89,10 @@ namespace bf
     char m_AllocBlock[memory_block_size];
 
    public:
-    // Not initialized by design since the PoolAllocatorImpl ctor does some setup.
+    // NOTE(SR):
+    //   `m_AllocBlock` is not initialized by design since the `PoolAllocatorImpl`
+    //   ctor does the setup.
+    //
     // ReSharper disable once CppPossiblyUninitializedMember
     PoolAllocator() :
       PoolAllocatorImpl{m_AllocBlock, memory_block_size, sizeof(T), alignof(T)}
