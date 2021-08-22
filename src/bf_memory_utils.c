@@ -138,7 +138,6 @@ uint64_t bfBytesReadUint64BE(const bfByte* bytes)
     bfBytesReadIntX(uint##size##_t, int##size##_t, bfBytesReadUint##size##type); \
   }
 
-
 bfBytesReadIntXDef(8, LE);
 bfBytesReadIntXDef(16, LE);
 bfBytesReadIntXDef(32, LE);
@@ -213,17 +212,17 @@ void bfBytesWriteUint64BE(bfByte* bytes, const uint64_t value)
   bytes[7] = bfCast(value >> 0 & 0xFFu, uint8_t);
 }
 
-#define bfBytesWriteIntX(utype, itype, func) \
-  utype uvalue;                              \
-                                             \
-  memcpy(&uvalue, &value, sizeof(value));    \
-                                             \
+#define bfBytesWriteIntX(utype, func)     \
+  utype uvalue;                           \
+                                          \
+  memcpy(&uvalue, &value, sizeof(value)); \
+                                          \
   func(bytes, uvalue)
 
-#define bfBytesWriteIntXDef(size, type)                                            \
-  void bfBytesWriteInt##size##type(bfByte* bytes, const int##size##_t value)       \
-  {                                                                                \
-    bfBytesWriteIntX(uint##size##_t, int##size##_t, bfBytesWriteUint##size##type); \
+#define bfBytesWriteIntXDef(size, type)                                      \
+  void bfBytesWriteInt##size##type(bfByte* bytes, const int##size##_t value) \
+  {                                                                          \
+    bfBytesWriteIntX(uint##size##_t, bfBytesWriteUint##size##type);          \
   }
 
 bfBytesWriteIntXDef(8, LE);

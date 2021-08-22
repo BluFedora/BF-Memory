@@ -20,11 +20,11 @@ namespace bf
 {
   namespace
   {
-    static CRTAllocator                          s_DefaultHeap = {};
-    static FixedLinearAllocator<bfMegabytes(10)> s_DefaultTemp = {};
+    static thread_local CRTAllocator                         s_DefaultHeap = {};
+    static thread_local FixedLinearAllocator<bfMegabytes(5)> s_DefaultTemp = {};
   }  // namespace
 
-  GlobalAllocators g_DefaultAllocator = {&s_DefaultHeap, &s_DefaultTemp};
+  thread_local GlobalAllocators g_DefaultAllocator = {&s_DefaultHeap, &s_DefaultTemp};
 }  // namespace bf
 
 /******************************************************************************/

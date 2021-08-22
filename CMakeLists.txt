@@ -13,42 +13,44 @@ cmake_policy(SET CMP0076 NEW)
 
 project(BF_Memory VERSION 0.1.3 DESCRIPTION "Custom allocator interface for various allocation schemes.")
 
-add_library("${PROJECT_NAME}_interface" INTERFACE)
+add_library(BF_Memory STATIC "")
 
 target_include_directories(
-  "${PROJECT_NAME}_interface"
-  INTERFACE
+  BF_Memory
+  PUBLIC
     "${PROJECT_SOURCE_DIR}/include"
 )
 
 target_sources(
-  "${PROJECT_NAME}_interface"
-  INTERFACE
-    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_allocators.hpp"
-    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_crt_allocator.hpp"
-    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_freelist_allocator.hpp"
-    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_imemory_manager.hpp"
-    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_linear_allocator.hpp"
-    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_memory_utils.h"
-    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_pool_allocator.hpp"
-    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_proxy_allocator.hpp"
-    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_stack_allocator.hpp"
-    "${PROJECT_SOURCE_DIR}/include/bf/memory/bf_stl_allocator.hpp"
+  BF_Memory
+  
+  PUBLIC
+    "include/bf/memory/bf_allocators.hpp"
+    "include/bf/memory/bf_crt_allocator.hpp"
+    "include/bf/memory/bf_freelist_allocator.hpp"
+    "include/bf/memory/bf_imemory_manager.hpp"
+    "include/bf/memory/bf_linear_allocator.hpp"
+    "include/bf/memory/bf_memory_utils.h"
+    "include/bf/memory/bf_pool_allocator.hpp"
+    "include/bf/memory/bf_proxy_allocator.hpp"
+    "include/bf/memory/bf_stack_allocator.hpp"
+    "include/bf/memory/bf_stl_allocator.hpp"
 
-    "${PROJECT_SOURCE_DIR}/src/bf_allocators.cpp"
-    "${PROJECT_SOURCE_DIR}/src/bf_crt_allocator.cpp"
-    "${PROJECT_SOURCE_DIR}/src/bf_freelist_allocator.cpp"
-    "${PROJECT_SOURCE_DIR}/src/bf_imemory_manager.cpp"
-    "${PROJECT_SOURCE_DIR}/src/bf_linear_allocator.cpp"
-    "${PROJECT_SOURCE_DIR}/src/bf_memory_utils.c"
-    "${PROJECT_SOURCE_DIR}/src/bf_pool_allocator.cpp"
-    "${PROJECT_SOURCE_DIR}/src/bf_proxy_allocator.cpp"
-    "${PROJECT_SOURCE_DIR}/src/bf_stack_allocator.cpp"
+  PRIVATE
+    "src/bf_allocators.cpp"
+    "src/bf_crt_allocator.cpp"
+    "src/bf_freelist_allocator.cpp"
+    "src/bf_imemory_manager.cpp"
+    "src/bf_linear_allocator.cpp"
+    "src/bf_memory_utils.c"
+    "src/bf_pool_allocator.cpp"
+    "src/bf_proxy_allocator.cpp"
+    "src/bf_stack_allocator.cpp"
 )
 
 target_compile_features(
-  "${PROJECT_NAME}_interface"
-  INTERFACE
+  BF_Memory
+  PUBLIC
     cxx_std_14
 )
 

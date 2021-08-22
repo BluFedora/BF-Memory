@@ -19,10 +19,6 @@
 
 namespace bf
 {
-  //
-  // Global Allocators
-  //
-
   struct GlobalAllocators
   {
     IMemoryManager*  general_heap;
@@ -31,7 +27,7 @@ namespace bf
 
   // If you reassign the default allocators you should do so before
   // running any code that uses them as that will cause a memory leak.
-  extern GlobalAllocators g_DefaultAllocator;
+  extern thread_local GlobalAllocators g_DefaultAllocator;
 }  // namespace bf
 
 #endif /* BF_ALLOCATORS_HPP */

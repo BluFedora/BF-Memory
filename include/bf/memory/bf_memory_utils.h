@@ -74,22 +74,22 @@ int16_t  bfBytesReadInt16BE(const bfByte* bytes);
 int32_t  bfBytesReadInt32BE(const bfByte* bytes);
 int64_t  bfBytesReadInt64BE(const bfByte* bytes);
 
-void bfBytesWriteUint8LE(bfByte* bytes, uint8_t value);
-void bfBytesWriteUint16LE(bfByte* bytes, uint16_t value);
-void bfBytesWriteUint32LE(bfByte* bytes, uint32_t value);
-void bfBytesWriteUint64LE(bfByte* bytes, uint64_t value);
-void bfBytesWriteUint8BE(bfByte* bytes, uint8_t value);
-void bfBytesWriteUint16BE(bfByte* bytes, uint16_t value);
-void bfBytesWriteUint32BE(bfByte* bytes, uint32_t value);
-void bfBytesWriteUint64BE(bfByte* bytes, uint64_t value);
-void bfBytesWriteInt8LE(bfByte* bytes, int8_t value);
-void bfBytesWriteInt16LE(bfByte* bytes, int16_t value);
-void bfBytesWriteInt32LE(bfByte* bytes, int32_t value);
-void bfBytesWriteInt64LE(bfByte* bytes, int64_t value);
-void bfBytesWriteInt8BE(bfByte* bytes, int8_t value);
-void bfBytesWriteInt16BE(bfByte* bytes, int16_t value);
-void bfBytesWriteInt32BE(bfByte* bytes, int32_t value);
-void bfBytesWriteInt64BE(bfByte* bytes, int64_t value);
+void bfBytesWriteUint8LE(bfByte* bytes, const uint8_t value);
+void bfBytesWriteUint16LE(bfByte* bytes, const uint16_t value);
+void bfBytesWriteUint32LE(bfByte* bytes, const uint32_t value);
+void bfBytesWriteUint64LE(bfByte* bytes, const uint64_t value);
+void bfBytesWriteUint8BE(bfByte* bytes, const uint8_t value);
+void bfBytesWriteUint16BE(bfByte* bytes, const uint16_t value);
+void bfBytesWriteUint32BE(bfByte* bytes, const uint32_t value);
+void bfBytesWriteUint64BE(bfByte* bytes, const uint64_t value);
+void bfBytesWriteInt8LE(bfByte* bytes, const int8_t value);
+void bfBytesWriteInt16LE(bfByte* bytes, const int16_t value);
+void bfBytesWriteInt32LE(bfByte* bytes, const int32_t value);
+void bfBytesWriteInt64LE(bfByte* bytes, const int64_t value);
+void bfBytesWriteInt8BE(bfByte* bytes, const int8_t value);
+void bfBytesWriteInt16BE(bfByte* bytes, const int16_t value);
+void bfBytesWriteInt32BE(bfByte* bytes, const int32_t value);
+void bfBytesWriteInt64BE(bfByte* bytes, const int64_t value);
 
 #if __cplusplus
 }
