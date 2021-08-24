@@ -21,8 +21,8 @@
 
 namespace bf
 {
-  LinearAllocator::LinearAllocator(char* memory_block, const std::size_t memory_block_size) :
-    MemoryManager(memory_block, memory_block_size),
+  LinearAllocator::LinearAllocator(void* memory_block, const std::size_t memory_block_size) :
+    MemoryManager((char*)memory_block, memory_block_size),
     m_MemoryOffset(0u)
   {
   }
@@ -40,7 +40,7 @@ namespace bf
   {
     char* const ptr = currentBlock();
 
-    if ((ptr + size) < end())
+    if ((ptr + size) <= end())
     {
       m_MemoryOffset += size;
       return ptr;
