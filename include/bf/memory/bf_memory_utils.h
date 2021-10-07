@@ -28,6 +28,7 @@ extern "C" {
 #define bfGigabytes(n) (bfMegabytes(n) * 1024)
 // clang-format on
 
+// TODO(SR): Maybe this should be removed??
 typedef unsigned char bfByte; /*!< The represents a single byte. */
 
 /*!
@@ -43,11 +44,51 @@ typedef unsigned char bfByte; /*!< The represents a single byte. */
  * @return size_t 
  *   The size of the object for the required alignment,
  */
-size_t bfAlignUpSize(size_t size, size_t required_alignment);
+size_t bfAlignUpSize(const size_t size, const size_t required_alignment);
 
-void* bfAlignUpPointer(const void* ptr, size_t required_alignment);
+/*!
+ * @brief
+ *   Moves `ptr` up a certain offset to be aligned.
+ * 
+ * @param ptr
+ *   The pointer you want aligned.
+ * 
+ * @param required_alignment
+ *   The alignment you want to align to.
+ *   Must be a non zero power of two.
+ * 
+ * @return
+ *   The newly aligned pointer.
+*/
+void* bfAlignUpPointer(const void* const ptr, const size_t required_alignment);
 
-/* Implements "std::align" but in C. */
+/*!
+ * @brief
+ *   Implements "std::align" but in C.
+ *
+ *   `size` must be <= *space or ths functions will always fail.
+ *   
+ * 
+ * @param alignment[in]
+ *   The alignment that you are wanting the pointer to be at.
+ *   Must be a non zero power of two.
+ * 
+ * @param size[in]
+ *   The size of the block of that needs to be aligned.
+ * 
+ * @param ptr[in/out]
+ *   The pointer ot be aligned, will be aligned
+ *   if this function succeeds otherwise unchanged.
+ * 
+ * @param space[in/out]
+ *   The size of the block of memory available to align memory to.
+ *   if this function succeeds the space left in the allocation
+ *   otherwise left unchanged.
+ * 
+ * @return
+ *   `ptr` is we can fit an aligned `size` into `space`,
+ *   otherwise NULL is returned.
+*/
 void* bfStdAlign(size_t alignment, size_t size, void** ptr, size_t* space);
 
 /*

@@ -19,15 +19,22 @@
 
 namespace bf
 {
-  struct GlobalAllocators
+  struct MemoryContext
   {
+    MemoryContext*   parent_ctx;
     IMemoryManager*  general_heap;
-    LinearAllocator* temporary;
+    LinearAllocator* temp_heap;
+
+    MemoryContext(const MemoryContext& rhs) = delete;
+    MemoryContext(MemoryContext&& rhs)      = delete;
+    MemoryContext& operator=(const MemoryContext& rhs) = delete;
+    MemoryContext& operator=(MemoryContext&& rhs) = delete;
+
+    MemoryContext();
+    ~MemoryContext();
   };
 
-  // If you reassign the default allocators you should do so before
-  // running any code that uses them as that will cause a memory leak.
-  extern thread_local GlobalAllocators g_DefaultAllocator;
+  extern thread_local MemoryContext* g_MemCtx;
 }  // namespace bf
 
 #endif /* BF_ALLOCATORS_HPP */

@@ -16,15 +16,33 @@
 #include "bf/memory/bf_crt_allocator.hpp"  // CRTAllocator
 #include "bf/memory/bf_memory_utils.h"     // bfMegabytes
 
+#include <cassert>
+
 namespace bf
 {
+  thread_local MemoryContext* g_MemCtx = nullptr;
+
   namespace
   {
-    static thread_local CRTAllocator                         s_DefaultHeap = {};
-    static thread_local FixedLinearAllocator<bfMegabytes(5)> s_DefaultTemp = {};
+    static CRTAllocator                                      s_DefaultHeap   = {};
+    static thread_local FixedLinearAllocator<bfMegabytes(5)> s_DefaultTemp   = {};
+    static thread_local MemoryContext                        s_DefaultMemCtx = {};
   }  // namespace
 
-  thread_local GlobalAllocators g_DefaultAllocator = {&s_DefaultHeap, &s_DefaultTemp};
+  MemoryContext::MemoryContext() :
+    parent_ctx{g_MemCtx},
+    general_heap{parent_ctx ? parent_ctx->general_heap : &s_DefaultHeap},
+    temp_heap{parent_ctx ? parent_ctx->temp_heap : &s_DefaultTemp}
+  {
+    g_MemCtx = this;
+  }
+
+  MemoryContext::~MemoryContext()
+  {
+    assert(g_MemCtx == this);
+    g_MemCtx = parent_ctx;
+  }
+
 }  // namespace bf
 
 /******************************************************************************/

@@ -16,22 +16,18 @@
 #include <assert.h> /* assert */
 #include <string.h> /* memcpy */
 
-// NOTE(SR):
-//   Usage of the bfBytesReadIntXDef and bfBytesWriteIntXDef macros cause this warning:
-// ReSharper disable CppClangTidyClangDiagnosticExtraSemi
-
 #define bfCast(e, T) ((T)(e))
 
-size_t bfAlignUpSize(size_t size, size_t required_alignment)
+size_t bfAlignUpSize(const size_t size, const size_t required_alignment)
 {
   assert(required_alignment > 0 && (required_alignment & (required_alignment - 1)) == 0 && "bfAlignUpSize:: The alignment must be a non-zero power of two.");
 
-  const size_t required_alignment_minus_one = required_alignment - 1;
+  const size_t required_alignment_mask = required_alignment - 1;
 
-  return size + required_alignment_minus_one & ~required_alignment_minus_one;
+  return size + required_alignment_mask & ~required_alignment_mask;
 }
 
-void* bfAlignUpPointer(const void* ptr, size_t required_alignment)
+void* bfAlignUpPointer(const void* const ptr, const size_t required_alignment)
 {
   assert(required_alignment > 0 && (required_alignment & (required_alignment - 1)) == 0 && "bfAlignUpPointer:: The alignment must be a non-zero power of two.");
 
@@ -63,6 +59,10 @@ void* bfStdAlign(size_t alignment, size_t size, void** ptr, size_t* space)
 
   return NULL;
 }
+
+// NOTE(SR):
+//   Usage of the bfBytesReadIntXDef and bfBytesWriteIntXDef macros cause this warning:
+// ReSharper disable CppClangTidyClangDiagnosticExtraSemi
 
 /*
   Small read on Endianess:
