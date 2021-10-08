@@ -16,7 +16,8 @@
 #include "bf/memory/bf_crt_allocator.hpp"  // CRTAllocator
 #include "bf/memory/bf_memory_utils.h"     // bfMegabytes
 
-#include <cassert>
+#include <cassert>  // assert
+#include <utility>  // g_MemCtx
 
 namespace bf
 {
@@ -30,11 +31,10 @@ namespace bf
   }  // namespace
 
   MemoryContext::MemoryContext() :
-    parent_ctx{g_MemCtx},
+    parent_ctx{std::exchange(g_MemCtx, this)},
     general_heap{parent_ctx ? parent_ctx->general_heap : &s_DefaultHeap},
     temp_heap{parent_ctx ? parent_ctx->temp_heap : &s_DefaultTemp}
   {
-    g_MemCtx = this;
   }
 
   MemoryContext::~MemoryContext()
@@ -42,7 +42,6 @@ namespace bf
     assert(g_MemCtx == this);
     g_MemCtx = parent_ctx;
   }
-
 }  // namespace bf
 
 /******************************************************************************/
