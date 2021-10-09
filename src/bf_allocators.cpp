@@ -17,7 +17,7 @@
 #include "bf/memory/bf_memory_utils.h"     // bfMegabytes
 
 #include <cassert>  // assert
-#include <utility>  // g_MemCtx
+#include <utility>  // exchange
 
 namespace bf
 {
