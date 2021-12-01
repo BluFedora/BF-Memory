@@ -14,11 +14,11 @@
 #ifndef BF_IMEMORY_MANAGER_HPP
 #define BF_IMEMORY_MANAGER_HPP
 
-#include <cstddef>     /* size_t                       */
-#include <cstring>     /* memcpy                       */
-#include <new>         /* to use placement new         */
-#include <type_traits> /* is_convertible, enable_if_t  */
-#include <utility>     /* forward, move                */
+#include <cstddef>     /* size_t                      */
+#include <cstring>     /* memcpy                      */
+#include <new>         /* placement new               */
+#include <type_traits> /* is_convertible, enable_if_t */
+#include <utility>     /* forward, move               */
 
 #ifndef BF_MEMORY_DEBUG_WIPE_MEMORY
 // NOTE(Shareef):
