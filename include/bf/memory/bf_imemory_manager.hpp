@@ -98,7 +98,7 @@ namespace bf
     // Unlike the Array API this does not do any 'magic' in the background,
     // Just a simple wrapper around a multiply and cast.
     template<typename T>
-    T* allocateUnmanagedArray(std::size_t num_elements)
+    inline T* allocateUnmanagedArray(std::size_t num_elements)
     {
       return static_cast<T*>(allocate(sizeof(T) * num_elements));
     }

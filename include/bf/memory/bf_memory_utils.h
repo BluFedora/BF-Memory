@@ -23,13 +23,12 @@ extern "C" {
 
 // clang-format off
 #define bfBytes(n)     (n)
-#define bfKilobytes(n) (bfBytes(n) * 1024)
+#define bfKilobytes(n) (bfBytes(n)     * 1024)
 #define bfMegabytes(n) (bfKilobytes(n) * 1024)
 #define bfGigabytes(n) (bfMegabytes(n) * 1024)
 // clang-format on
 
-// TODO(SR): Maybe this should be removed??
-typedef unsigned char bfByte; /*!< The represents a single byte. */
+typedef unsigned char byte; /*!< The represents a single byte. */
 
 /*!
  * @brief 
@@ -98,39 +97,39 @@ void* bfStdAlign(size_t alignment, size_t size, void** ptr, size_t* space);
     Make sure the byte buffers are of the correct size for the data-type.
 */
 
-uint8_t  bfBytesReadUint8LE(const bfByte* bytes);
-uint16_t bfBytesReadUint16LE(const bfByte* bytes);
-uint32_t bfBytesReadUint32LE(const bfByte* bytes);
-uint64_t bfBytesReadUint64LE(const bfByte* bytes);
-uint8_t  bfBytesReadUint8BE(const bfByte* bytes);
-uint16_t bfBytesReadUint16BE(const bfByte* bytes);
-uint32_t bfBytesReadUint32BE(const bfByte* bytes);
-uint64_t bfBytesReadUint64BE(const bfByte* bytes);
-int8_t   bfBytesReadInt8LE(const bfByte* bytes);
-int16_t  bfBytesReadInt16LE(const bfByte* bytes);
-int32_t  bfBytesReadInt32LE(const bfByte* bytes);
-int64_t  bfBytesReadInt64LE(const bfByte* bytes);
-int8_t   bfBytesReadInt8BE(const bfByte* bytes);
-int16_t  bfBytesReadInt16BE(const bfByte* bytes);
-int32_t  bfBytesReadInt32BE(const bfByte* bytes);
-int64_t  bfBytesReadInt64BE(const bfByte* bytes);
+uint8_t  bfBytesReadUint8LE(const byte* bytes);
+uint16_t bfBytesReadUint16LE(const byte* bytes);
+uint32_t bfBytesReadUint32LE(const byte* bytes);
+uint64_t bfBytesReadUint64LE(const byte* bytes);
+uint8_t  bfBytesReadUint8BE(const byte* bytes);
+uint16_t bfBytesReadUint16BE(const byte* bytes);
+uint32_t bfBytesReadUint32BE(const byte* bytes);
+uint64_t bfBytesReadUint64BE(const byte* bytes);
+int8_t   bfBytesReadInt8LE(const byte* bytes);
+int16_t  bfBytesReadInt16LE(const byte* bytes);
+int32_t  bfBytesReadInt32LE(const byte* bytes);
+int64_t  bfBytesReadInt64LE(const byte* bytes);
+int8_t   bfBytesReadInt8BE(const byte* bytes);
+int16_t  bfBytesReadInt16BE(const byte* bytes);
+int32_t  bfBytesReadInt32BE(const byte* bytes);
+int64_t  bfBytesReadInt64BE(const byte* bytes);
 
-void bfBytesWriteUint8LE(bfByte* bytes, const uint8_t value);
-void bfBytesWriteUint16LE(bfByte* bytes, const uint16_t value);
-void bfBytesWriteUint32LE(bfByte* bytes, const uint32_t value);
-void bfBytesWriteUint64LE(bfByte* bytes, const uint64_t value);
-void bfBytesWriteUint8BE(bfByte* bytes, const uint8_t value);
-void bfBytesWriteUint16BE(bfByte* bytes, const uint16_t value);
-void bfBytesWriteUint32BE(bfByte* bytes, const uint32_t value);
-void bfBytesWriteUint64BE(bfByte* bytes, const uint64_t value);
-void bfBytesWriteInt8LE(bfByte* bytes, const int8_t value);
-void bfBytesWriteInt16LE(bfByte* bytes, const int16_t value);
-void bfBytesWriteInt32LE(bfByte* bytes, const int32_t value);
-void bfBytesWriteInt64LE(bfByte* bytes, const int64_t value);
-void bfBytesWriteInt8BE(bfByte* bytes, const int8_t value);
-void bfBytesWriteInt16BE(bfByte* bytes, const int16_t value);
-void bfBytesWriteInt32BE(bfByte* bytes, const int32_t value);
-void bfBytesWriteInt64BE(bfByte* bytes, const int64_t value);
+void bfBytesWriteUint8LE(byte* bytes, const uint8_t value);
+void bfBytesWriteUint16LE(byte* bytes, const uint16_t value);
+void bfBytesWriteUint32LE(byte* bytes, const uint32_t value);
+void bfBytesWriteUint64LE(byte* bytes, const uint64_t value);
+void bfBytesWriteUint8BE(byte* bytes, const uint8_t value);
+void bfBytesWriteUint16BE(byte* bytes, const uint16_t value);
+void bfBytesWriteUint32BE(byte* bytes, const uint32_t value);
+void bfBytesWriteUint64BE(byte* bytes, const uint64_t value);
+void bfBytesWriteInt8LE(byte* bytes, const int8_t value);
+void bfBytesWriteInt16LE(byte* bytes, const int16_t value);
+void bfBytesWriteInt32LE(byte* bytes, const int32_t value);
+void bfBytesWriteInt64LE(byte* bytes, const int64_t value);
+void bfBytesWriteInt8BE(byte* bytes, const int8_t value);
+void bfBytesWriteInt16BE(byte* bytes, const int16_t value);
+void bfBytesWriteInt32BE(byte* bytes, const int32_t value);
+void bfBytesWriteInt64BE(byte* bytes, const int64_t value);
 
 #if __cplusplus
 }

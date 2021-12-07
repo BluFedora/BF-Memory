@@ -72,17 +72,17 @@ void* bfStdAlign(size_t alignment, size_t size, void** ptr, size_t* space)
     [http://c-faq.com/expr/preservingrules.html]
 */
 
-uint8_t bfBytesReadUint8LE(const bfByte* bytes)
+uint8_t bfBytesReadUint8LE(const byte* bytes)
 {
   return bfCast(bytes[0], uint8_t);
 }
 
-uint16_t bfBytesReadUint16LE(const bfByte* bytes)
+uint16_t bfBytesReadUint16LE(const byte* bytes)
 {
   return bfCast((bfCast(bytes[0], uint16_t) << 0) | (bfCast(bytes[1], uint16_t) << 8), uint16_t);
 }
 
-uint32_t bfBytesReadUint32LE(const bfByte* bytes)
+uint32_t bfBytesReadUint32LE(const byte* bytes)
 {
   const uint32_t result = (bfCast(bytes[0], uint32_t) << 0) |
                           (bfCast(bytes[1], uint32_t) << 8) |
@@ -92,7 +92,7 @@ uint32_t bfBytesReadUint32LE(const bfByte* bytes)
   return result;
 }
 
-uint64_t bfBytesReadUint64LE(const bfByte* bytes)
+uint64_t bfBytesReadUint64LE(const byte* bytes)
 {
   return (bfCast(bytes[0], uint64_t) << 0) | (bfCast(bytes[1], uint64_t) << 8) |
          (bfCast(bytes[2], uint64_t) << 16) | (bfCast(bytes[3], uint64_t) << 24) |
@@ -100,23 +100,23 @@ uint64_t bfBytesReadUint64LE(const bfByte* bytes)
          (bfCast(bytes[6], uint64_t) << 48) | (bfCast(bytes[7], uint64_t) << 56);
 }
 
-uint8_t bfBytesReadUint8BE(const bfByte* bytes)
+uint8_t bfBytesReadUint8BE(const byte* bytes)
 {
   return bfCast(bytes[0], uint8_t);
 }
 
-uint16_t bfBytesReadUint16BE(const bfByte* bytes)
+uint16_t bfBytesReadUint16BE(const byte* bytes)
 {
   return bfCast((bfCast(bytes[1], uint16_t) << 0) | (bfCast(bytes[0], uint16_t) << 8), uint16_t);
 }
 
-uint32_t bfBytesReadUint32BE(const bfByte* bytes)
+uint32_t bfBytesReadUint32BE(const byte* bytes)
 {
   return (bfCast(bytes[3], uint32_t) << 0) | (bfCast(bytes[2], uint32_t) << 8) |
          (bfCast(bytes[1], uint32_t) << 16) | (bfCast(bytes[0], uint32_t) << 24);
 }
 
-uint64_t bfBytesReadUint64BE(const bfByte* bytes)
+uint64_t bfBytesReadUint64BE(const byte* bytes)
 {
   return (bfCast(bytes[7], uint64_t) << 0) | (bfCast(bytes[6], uint64_t) << 8) |
          (bfCast(bytes[5], uint64_t) << 16) | (bfCast(bytes[4], uint64_t) << 24) |
@@ -133,7 +133,7 @@ uint64_t bfBytesReadUint64BE(const bfByte* bytes)
   return ivalue;
 
 #define bfBytesReadIntXDef(size, type)                                           \
-  int##size##_t bfBytesReadInt##size##type(const bfByte* bytes)                  \
+  int##size##_t bfBytesReadInt##size##type(const byte* bytes)                  \
   {                                                                              \
     bfBytesReadIntX(uint##size##_t, int##size##_t, bfBytesReadUint##size##type); \
   }
@@ -150,18 +150,18 @@ bfBytesReadIntXDef(64, BE);
 #undef bfBytesReadIntXDef
 #undef bfBytesReadIntX
 
-void bfBytesWriteUint8LE(bfByte* bytes, const uint8_t value)
+void bfBytesWriteUint8LE(byte* bytes, const uint8_t value)
 {
   bytes[0] = bfCast(value >> 0 & 0xFFu, uint8_t);
 }
 
-void bfBytesWriteUint16LE(bfByte* bytes, const uint16_t value)
+void bfBytesWriteUint16LE(byte* bytes, const uint16_t value)
 {
   bytes[0] = bfCast(value >> 0 & 0xFFu, uint8_t);
   bytes[1] = bfCast(value >> 8 & 0xFFu, uint8_t);
 }
 
-void bfBytesWriteUint32LE(bfByte* bytes, const uint32_t value)
+void bfBytesWriteUint32LE(byte* bytes, const uint32_t value)
 {
   bytes[0] = bfCast(value >> 0 & 0xFFu, uint8_t);
   bytes[1] = bfCast(value >> 8 & 0xFFu, uint8_t);
@@ -169,7 +169,7 @@ void bfBytesWriteUint32LE(bfByte* bytes, const uint32_t value)
   bytes[3] = bfCast(value >> 24 & 0xFFu, uint8_t);
 }
 
-void bfBytesWriteUint64LE(bfByte* bytes, const uint64_t value)
+void bfBytesWriteUint64LE(byte* bytes, const uint64_t value)
 {
   bytes[0] = bfCast(value >> 0 & 0xFFu, uint8_t);
   bytes[1] = bfCast(value >> 8 & 0xFFu, uint8_t);
@@ -181,18 +181,18 @@ void bfBytesWriteUint64LE(bfByte* bytes, const uint64_t value)
   bytes[7] = bfCast(value >> 56 & 0xFFu, uint8_t);
 }
 
-void bfBytesWriteUint8BE(bfByte* bytes, const uint8_t value)
+void bfBytesWriteUint8BE(byte* bytes, const uint8_t value)
 {
   bytes[0] = bfCast(value >> 0 & 0xFFu, uint8_t);
 }
 
-void bfBytesWriteUint16BE(bfByte* bytes, const uint16_t value)
+void bfBytesWriteUint16BE(byte* bytes, const uint16_t value)
 {
   bytes[0] = bfCast(value >> 8 & 0xFFu, uint8_t);
   bytes[1] = bfCast(value >> 0 & 0xFFu, uint8_t);
 }
 
-void bfBytesWriteUint32BE(bfByte* bytes, const uint32_t value)
+void bfBytesWriteUint32BE(byte* bytes, const uint32_t value)
 {
   bytes[0] = bfCast(value >> 24 & 0xFFu, uint8_t);
   bytes[1] = bfCast(value >> 16 & 0xFFu, uint8_t);
@@ -200,7 +200,7 @@ void bfBytesWriteUint32BE(bfByte* bytes, const uint32_t value)
   bytes[3] = bfCast(value >> 0 & 0xFFu, uint8_t);
 }
 
-void bfBytesWriteUint64BE(bfByte* bytes, const uint64_t value)
+void bfBytesWriteUint64BE(byte* bytes, const uint64_t value)
 {
   bytes[0] = bfCast(value >> 56 & 0xFFu, uint8_t);
   bytes[1] = bfCast(value >> 48 & 0xFFu, uint8_t);
@@ -220,7 +220,7 @@ void bfBytesWriteUint64BE(bfByte* bytes, const uint64_t value)
   func(bytes, uvalue)
 
 #define bfBytesWriteIntXDef(size, type)                                      \
-  void bfBytesWriteInt##size##type(bfByte* bytes, const int##size##_t value) \
+  void bfBytesWriteInt##size##type(byte* bytes, const int##size##_t value) \
   {                                                                          \
     bfBytesWriteIntX(uint##size##_t, bfBytesWriteUint##size##type);          \
   }

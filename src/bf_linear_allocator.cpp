@@ -15,7 +15,7 @@
 /******************************************************************************/
 #include "bf/memory/bf_linear_allocator.hpp"
 
-// #include <new>    /* bad_alloc  */
+#include <new> /* bad_alloc  */
 
 #include <cassert>  // assert
 
@@ -46,14 +46,15 @@ namespace bf
       return ptr;
     }
 
-    assert(false);
-    // throw std::bad_alloc();
+    throw std::bad_alloc();
     return nullptr;
   }
 
-  void LinearAllocator::deallocate(void*, std::size_t)
+  void LinearAllocator::deallocate(void* ptr, std::size_t)
   {
-    /* NO-OP */
+#ifdef BF_MEMORY_DEBUG_WIPE_MEMORY
+    checkPointer(ptr);
+#endif
   }
 
   char* LinearAllocator::currentBlock() const

@@ -20,8 +20,6 @@
 
 namespace bf
 {
-  class LinearAllocatorSavePoint;
-
   class LinearAllocator : public MemoryManager
   {
     friend class LinearAllocatorSavePoint;
