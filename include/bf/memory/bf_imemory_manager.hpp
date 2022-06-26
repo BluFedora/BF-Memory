@@ -1,15 +1,15 @@
 /******************************************************************************/
 /*!
-* @file   bf_imemory_manager.hpp
-* @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
-* @brief
-*  Outlines a basic interface for the various types of memory managers.
-*
-* @version 0.0.1
-* @date    2019-12-26
-*
-* @copyright Copyright (c) 2019-2021
-*/
+ * @file   bf_imemory_manager.hpp
+ * @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
+ * @date   2019-12-26
+ * @brief
+ *   Outlines a basic interface for the various types of memory managers.
+ *
+ * @version 0.0.1
+ *
+ * @copyright Copyright (c) 2019-2022
+ */
 /******************************************************************************/
 #ifndef BF_IMEMORY_MANAGER_HPP
 #define BF_IMEMORY_MANAGER_HPP
@@ -32,15 +32,15 @@ namespace bf
 {
   /*!
    * @brief
-   *   Interface for all memory managers.
+   *   Interface for a memory manager.
    */
   class IMemoryManager
   {
    private:
     /*!
-    * @brief
-    *   Header for all array API allocated blocks.
-    */
+     * @brief
+     *   Header for all array API allocated blocks.
+     */
     struct ArrayHeader final
     {
       std::size_t size;
@@ -83,24 +83,45 @@ namespace bf
     virtual void* allocate(std::size_t size) = 0;
 
     /*!
-     * @brief 
+     * @brief
      *   Frees the memory pointer to by \p ptr.
-     * 
+     *
      * @param ptr
-     *   A non null pointer to memeory allcoated with 'IMemoryManager::allocate'.
+     *   A non null pointer to memory allcoated with 'IMemoryManager::allocate'.
      *   The pointer is invalid after this call returns.
-     * 
+     *
      * @param num_bytes
      *   The size the pointer was allocated with.
-    */
+     */
     virtual void deallocate(void* ptr, std::size_t num_bytes) = 0;
 
+    //
     // Unlike the Array API this does not do any 'magic' in the background,
     // Just a simple wrapper around a multiply and cast.
+    //
+    // Deallocate using `IMemoryManager::deallocateUnmanagedArray`.
+    //
     template<typename T>
     inline T* allocateUnmanagedArray(std::size_t num_elements)
     {
       return static_cast<T*>(allocate(sizeof(T) * num_elements));
+    }
+
+    template<typename T>
+    inline T* reallocateUnmanagedArray(T* ptr, std::size_t old_elements, std::size_t new_num_elements)
+    {
+      if (ptr)
+      {
+        deallocateUnmanagedArray<T>(ptr, old_elements);
+      }
+
+      return allocateUnmanagedArray<T>(new_num_elements);
+    }
+
+    template<typename T>
+    inline void deallocateUnmanagedArray(T* ptr, std::size_t num_elements)
+    {
+      deallocate(ptr, sizeof(T) * num_elements);
     }
 
     //-------------------------------------------------------------------------------------//
@@ -162,12 +183,7 @@ namespace bf
     {
       void* const mem_block = allocate(sizeof(T));
 
-      if (mem_block)
-      {
-        return new (mem_block) T(std::forward<Args>(args)...);
-      }
-
-      return nullptr;
+      return mem_block ? new (mem_block) T(std::forward<Args>(args)...) : nullptr;
     }
 
     /*!
@@ -261,7 +277,7 @@ namespace bf
      *   The allocated array with num_elements size.
      *   nullptr if the request could not be fulfilled.
      */
-    template<typename T, typename std::enable_if<std::is_trivially_copyable<T>::value, T>::type* = nullptr>
+    template<typename T>
     T* allocateArrayTrivial(std::size_t num_elements, std::size_t array_alignment = alignof(T))
     {
       if (num_elements)
@@ -270,9 +286,9 @@ namespace bf
 
         if (array_data)
         {
-          ArrayHeader* header = static_cast<ArrayHeader*>(grabHeader(sizeof(ArrayHeader), array_data));
-          header->size        = num_elements;
-          header->alignment   = array_alignment;
+          ArrayHeader* const header = static_cast<ArrayHeader*>(grabHeader(sizeof(ArrayHeader), array_data));
+          header->size              = num_elements;
+          header->alignment         = array_alignment;
         }
 
         return array_data;
@@ -283,7 +299,7 @@ namespace bf
 
     /*!
      * @brief
-     *   Returns size of the array. (number of elements)
+     *   Returns number of elements the array has.
      *
      * @tparam T
      *   The type of the array.
@@ -414,18 +430,16 @@ namespace bf
      *     'IMemoryManager::arrayResize'.
      */
     template<typename T>
-    void deallocateArray(T* ptr)
+    void deallocateArray(T* const ptr)
     {
       if (ptr)
       {
-        ArrayHeader* header       = static_cast<ArrayHeader*>(grabHeader(sizeof(ArrayHeader), ptr));
-        T*           elements     = ptr;
-        T* const     elements_end = elements + header->size;
+        const ArrayHeader* const header       = static_cast<ArrayHeader*>(grabHeader(sizeof(ArrayHeader), ptr));
+        const T* const           elements_end = ptr + header->size;
 
-        while (elements != elements_end)
+        for (T* elements = ptr; elements != elements_end; ++elements)
         {
           elements->~T();
-          ++elements;
         }
 
         deallocateAligned(sizeof(ArrayHeader), ptr, header->size * sizeof(T), header->alignment);
@@ -495,6 +509,13 @@ namespace bf
     {
     }
 
+    ScopedBuffer(std::nullptr_t) :
+      m_Allocator{nullptr},
+      m_Buffer{nullptr},
+      m_Size{0u}
+    {
+    }
+
     // Disable copies
 
     ScopedBuffer(const ScopedBuffer& rhs) = delete;
@@ -535,6 +556,33 @@ namespace bf
       }
     }
   };
+
+  template<typename T>
+  struct FixedOwnedBuffer
+  {
+    IMemoryManager& memory;
+    T*              buffer;
+
+    FixedOwnedBuffer(IMemoryManager& memory) :
+      memory{memory},
+      buffer{nullptr}
+    {
+    }
+
+    // TODO(SR): Implement move and copy. (disabled for now)
+    FixedOwnedBuffer(const FixedOwnedBuffer& rhs) = delete;
+    FixedOwnedBuffer& operator=(const FixedOwnedBuffer& rhs) = delete;
+    FixedOwnedBuffer(FixedOwnedBuffer&& rhs)                 = delete;
+    FixedOwnedBuffer& operator=(FixedOwnedBuffer&& rhs) = delete;
+
+    std::size_t size() const { return buffer ? memory.arraySize(buffer) : 0u; }
+    void        resize(std::size_t new_size) { buffer = memory.arrayResize(buffer, new_size); }
+
+    ~FixedOwnedBuffer()
+    {
+      memory.deallocateArray(buffer);
+    }
+  };
 }  // namespace bf
 
 #endif /* BF_IMEMORY_MANAGER_HPP */
@@ -543,7 +591,7 @@ namespace bf
 /*
   MIT License
 
-  Copyright (c) 2019-2021 Shareef Abdoul-Raheem
+  Copyright (c) 2019-2022 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

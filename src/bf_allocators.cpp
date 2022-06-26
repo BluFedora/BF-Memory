@@ -1,46 +1,58 @@
 /******************************************************************************/
 /*!
-* @file   bf_allocators.cpp
-* @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
-* @brief
-*   Defines some global default allocators for the program.
-*
-* @version 0.0.1
-* @date    2021-03-15
-*
-* @copyright Copyright (c) 2021
-*/
+ * @file   bf_allocators.cpp
+ * @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
+ * @date   2021-03-15
+ * @brief
+ *   Defines global allocators for the program.
+ *
+ * @copyright Copyright (c) 2021-2022
+ */
 /******************************************************************************/
 #include "bf/memory/bf_allocators.hpp"
 
 #include "bf/memory/bf_crt_allocator.hpp"  // CRTAllocator
 #include "bf/memory/bf_memory_utils.h"     // bfMegabytes
 
-#include <cassert>  // assert
 #include <utility>  // exchange
 
 namespace bf
 {
-  thread_local MemoryContext* g_MemCtx = nullptr;
-
   namespace
   {
-    static CRTAllocator                                      s_DefaultHeap   = {};
-    static thread_local FixedLinearAllocator<bfMegabytes(5)> s_DefaultTemp   = {};
-    static thread_local MemoryContext                        s_DefaultMemCtx = {};
+    static CRTAllocator                                          s_DefaultHeap   = {};
+    static thread_local FixedLinearAllocator<bfMegabytes(1) / 2> s_DefaultTemp   = {};
+    static thread_local MemoryContext*                           g_MemCtx        = nullptr;  //!< Initalized from `s_DefaultMemCtx`'s constructor.
+    static thread_local MemoryContext                            s_DefaultMemCtx = {};
   }  // namespace
 
-  MemoryContext::MemoryContext() :
+  MemoryContext::MemoryContext(IMemoryManager* general_heap, LinearAllocator* temp_heap) :
     parent_ctx{std::exchange(g_MemCtx, this)},
-    general_heap{parent_ctx ? parent_ctx->general_heap : &s_DefaultHeap},
-    temp_heap{parent_ctx ? parent_ctx->temp_heap : &s_DefaultTemp}
+    general_heap{parent_ctx ? (general_heap ? general_heap : parent_ctx->general_heap) : &s_DefaultHeap},
+    temp_heap{parent_ctx ? (temp_heap ? temp_heap : parent_ctx->temp_heap) : &s_DefaultTemp}
   {
   }
 
   MemoryContext::~MemoryContext()
   {
-    assert(g_MemCtx == this);
+    if (g_MemCtx != this) { std::abort(); }
     g_MemCtx = parent_ctx;
+  }
+
+  MemoryContext& ParentMemoryContext()
+  {
+    if (!g_MemCtx->parent_ctx) { std::abort(); }
+    return *g_MemCtx->parent_ctx;
+  }
+
+  IMemoryManager& GeneralHeap()
+  {
+    return *g_MemCtx->general_heap;
+  }
+
+  LinearAllocator& TempHeap()
+  {
+    return *g_MemCtx->temp_heap;
   }
 }  // namespace bf
 
@@ -48,7 +60,7 @@ namespace bf
 /*
   MIT License
 
-  Copyright (c) 2021 Shareef Abdoul-Raheem
+  Copyright (c) 2021-2022 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

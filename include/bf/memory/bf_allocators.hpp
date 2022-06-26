@@ -1,15 +1,13 @@
 /******************************************************************************/
 /*!
-* @file   bf_allocators.hpp
-* @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
-* @brief
-*   Defines some global default allocators for the program.
-*
-* @version 0.0.1
-* @date    2021-03-15
-*
-* @copyright Copyright (c) 2021
-*/
+ * @file   bf_allocators.hpp
+ * @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
+ * @date   2021-03-15
+ * @brief
+ *   Defines global allocators for the program.
+ *
+ * @copyright Copyright (c) 2021-2022
+ */
 /******************************************************************************/
 #ifndef BF_ALLOCATORS_HPP
 #define BF_ALLOCATORS_HPP
@@ -19,6 +17,16 @@
 
 namespace bf
 {
+  // Usage:
+  //   Declare a `MemoryContext` on the stack and reassign `general_heap` and/or `temp_heap`.
+  //
+  //   MemoryContext ctx;
+  //   ctx.general_heap = &my_new_allocator.
+  //
+  //  By default the allocators are set to whatever the parent context had.
+  //
+  //  NOTE: These memory contexts are thread local.
+  //
   struct MemoryContext
   {
     MemoryContext*   parent_ctx;
@@ -30,11 +38,13 @@ namespace bf
     MemoryContext& operator=(const MemoryContext& rhs) = delete;
     MemoryContext& operator=(MemoryContext&& rhs) = delete;
 
-    MemoryContext();
+    MemoryContext(IMemoryManager* general_heap = nullptr, LinearAllocator* temp_heap = nullptr);
     ~MemoryContext();
   };
 
-  extern thread_local MemoryContext* g_MemCtx;
+  MemoryContext&   ParentMemoryContext();
+  IMemoryManager&  GeneralHeap();
+  LinearAllocator& TempHeap();
 }  // namespace bf
 
 #endif /* BF_ALLOCATORS_HPP */
@@ -43,7 +53,7 @@ namespace bf
 /*
   MIT License
 
-  Copyright (c) 2021 Shareef Abdoul-Raheem
+  Copyright (c) 2021-2022 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
