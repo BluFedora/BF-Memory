@@ -47,3 +47,5 @@ target_compile_features(
   PUBLIC
     cxx_std_14
 )
+
+set_property(TARGET BF_Memory PROPERTY FOLDER "BluFedora/Foundation")
