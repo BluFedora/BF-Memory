@@ -21,12 +21,12 @@
 #include <utility>     /* forward, move               */
 
 #ifndef BF_MEMORY_DEBUG_WIPE_MEMORY
-// NOTE(Shareef):
-//   Set to 0 if you want faster allocations at the cost of less safety.
+
 #define BF_MEMORY_DEBUG_WIPE_MEMORY 1
 #define BF_MEMORY_DEBUG_SIGNATURE 0xCD
 #define BF_MEMORY_DEBUG_ALIGNMENT_PAD 0xFE
-#endif /* BIFROST_MEMORY_DEBUG_WIPE_MEMORY */
+
+#endif /* BF_MEMORY_DEBUG_WIPE_MEMORY */
 
 namespace bf
 {
@@ -458,14 +458,6 @@ namespace bf
    */
   class MemoryManager : public IMemoryManager
   {
-   public:
-    template<typename T,
-             typename = std::enable_if_t<std::is_convertible<T*, IMemoryManager*>::value>>
-    static constexpr std::size_t header_size()
-    {
-      return T::header_size;
-    }
-
    private:
     char* const m_MemoryBlockBegin;
     char* const m_MemoryBlockEnd;
@@ -505,7 +497,7 @@ namespace bf
     }
 
     ScopedBuffer(IMemoryManager& allocator, std::size_t size) :
-      ScopedBuffer(allocator, static_cast<char*>(allocator.allocate(size)), size)
+      ScopedBuffer(allocator, allocator.allocateUnmanagedArray<char>(size), size)
     {
     }
 
@@ -547,6 +539,7 @@ namespace bf
     [[nodiscard]] IMemoryManager& allocator() const noexcept { return *m_Allocator; }
     [[nodiscard]] char*           buffer() const noexcept { return m_Buffer; }
     [[nodiscard]] std::size_t     size() const noexcept { return m_Size; }
+    [[nodiscard]]                 operator bool() const { return m_Buffer != nullptr; }
 
     ~ScopedBuffer() noexcept
     {
@@ -563,10 +556,11 @@ namespace bf
     IMemoryManager& memory;
     T*              buffer;
 
-    FixedOwnedBuffer(IMemoryManager& memory) :
+    FixedOwnedBuffer(IMemoryManager& memory, std::size_t size = 0u) :
       memory{memory},
       buffer{nullptr}
     {
+      resize(size);
     }
 
     // TODO(SR): Implement move and copy. (disabled for now)
@@ -577,11 +571,9 @@ namespace bf
 
     std::size_t size() const { return buffer ? memory.arraySize(buffer) : 0u; }
     void        resize(std::size_t new_size) { buffer = memory.arrayResize(buffer, new_size); }
+    void        destroy() { memory.deallocateArray(std::exchange(buffer, nullptr)); }
 
-    ~FixedOwnedBuffer()
-    {
-      memory.deallocateArray(buffer);
-    }
+    ~FixedOwnedBuffer() { destroy(); }
   };
 }  // namespace bf
 
