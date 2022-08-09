@@ -6,8 +6,6 @@
  * @brief
  *   Outlines a basic interface for the various types of memory managers.
  *
- * @version 0.0.1
- *
  * @copyright Copyright (c) 2019-2022
  */
 /******************************************************************************/
@@ -371,16 +369,16 @@ namespace bf
     template<typename T>
     T* arrayResize(T* const old_ptr, std::size_t num_elements, std::size_t array_alignment = alignof(T))
     {
-      if (!old_ptr)  // NOTE(Shareef): if old_ptr is null act as malloc
+      if (!old_ptr)  // NOTE(SR): if old_ptr is null act as malloc
       {
         return allocateArray<T>(num_elements, array_alignment);
       }
 
-      if (num_elements == 0)  // NOTE(Shareef): if new_size is zero act as 'free'
+      if (num_elements == 0)  // NOTE(SR): if new_size is zero act as 'free'
       {
         deallocateArray(old_ptr);
       }
-      else  // NOTE(Shareef): attempt to resize the allocation
+      else  // NOTE(SR): attempt to resize the allocation
       {
         ArrayHeader*      header   = static_cast<ArrayHeader*>(grabHeader(sizeof(ArrayHeader), old_ptr));
         const std::size_t old_size = header->size;
