@@ -12,48 +12,61 @@
 #include "bf/memory/bf_allocators.hpp"
 
 #include "bf/memory/bf_crt_allocator.hpp"  // CRTAllocator
-#include "bf/memory/bf_memory_utils.h"     // bfMegabytes
+#include "bf/memory/bf_memory_utils.h"     // bfKilobytes
 
 #include <utility>  // exchange
 
 namespace bf
 {
-  namespace
+  static MemoryContext*& initMemCtx(MemoryContext*& mem_ctx)
   {
-    static CRTAllocator                                          s_DefaultHeap   = {};
-    static thread_local FixedLinearAllocator<bfMegabytes(1) / 2> s_DefaultTemp   = {};
-    static thread_local MemoryContext*                           g_MemCtx        = nullptr;  //!< Initalized from `s_DefaultMemCtx`'s constructor.
-    static thread_local MemoryContext                            s_DefaultMemCtx = {};
-  }  // namespace
+    if (!mem_ctx)
+    {
+      static CRTAllocator                                        s_DefaultHeap   = {};
+      static thread_local FixedLinearAllocator<bfKilobytes(512)> s_DefaultTemp   = {};
+      static thread_local MemoryContext                          s_DefaultMemCtx = {&s_DefaultHeap, &s_DefaultTemp};
+    }
+
+    return mem_ctx;
+  }
+
+  static MemoryContext*& getMemContextFast()
+  {
+    static thread_local MemoryContext* s_MemCtx = nullptr;
+
+    return s_MemCtx;
+  }
+
+  static MemoryContext*& getMemContext()
+  {
+    return initMemCtx(getMemContextFast());
+  }
 
   MemoryContext::MemoryContext(IMemoryManager* general_heap, LinearAllocator* temp_heap) :
-    parent_ctx{std::exchange(g_MemCtx, this)},
-    general_heap{parent_ctx ? (general_heap ? general_heap : parent_ctx->general_heap) : &s_DefaultHeap},
-    temp_heap{parent_ctx ? (temp_heap ? temp_heap : parent_ctx->temp_heap) : &s_DefaultTemp}
+    parent_ctx{std::exchange(getMemContextFast(), this)},
+    general_heap{general_heap ? general_heap : parent_ctx->general_heap},
+    temp_heap{temp_heap ? temp_heap : parent_ctx->temp_heap}
   {
   }
 
   MemoryContext::~MemoryContext()
   {
-    if (g_MemCtx != this) { std::abort(); }
-    g_MemCtx = parent_ctx;
+    auto& global_ctx = getMemContextFast();
+
+    if (global_ctx != this) { std::abort(); }
+    global_ctx = parent_ctx;
   }
 
   MemoryContext& ParentMemoryContext()
   {
-    if (!g_MemCtx->parent_ctx) { std::abort(); }
-    return *g_MemCtx->parent_ctx;
+    const auto& global_ctx = getMemContext();
+
+    if (!global_ctx->parent_ctx) { std::abort(); }
+    return *global_ctx->parent_ctx;
   }
 
-  IMemoryManager& GeneralHeap()
-  {
-    return *g_MemCtx->general_heap;
-  }
-
-  LinearAllocator& TempHeap()
-  {
-    return *g_MemCtx->temp_heap;
-  }
+  IMemoryManager&  GeneralHeap() { return *getMemContext()->general_heap; }
+  LinearAllocator& TempHeap() { return *getMemContext()->temp_heap; }
 }  // namespace bf
 
 /******************************************************************************/
