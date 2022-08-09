@@ -18,6 +18,14 @@
 
 namespace bf
 {
+  static void memoryAssert(const bool condition)
+  {
+    if (!condition)
+    {
+      std::abort();
+    }
+  }
+
   static MemoryContext*& initMemCtx(MemoryContext*& mem_ctx)
   {
     if (!mem_ctx)
@@ -52,8 +60,7 @@ namespace bf
   MemoryContext::~MemoryContext()
   {
     auto& global_ctx = getMemContextFast();
-
-    if (global_ctx != this) { std::abort(); }
+    memoryAssert(global_ctx == this);
     global_ctx = parent_ctx;
   }
 
@@ -61,7 +68,7 @@ namespace bf
   {
     const auto& global_ctx = getMemContext();
 
-    if (!global_ctx->parent_ctx) { std::abort(); }
+    memoryAssert(global_ctx->parent_ctx != nullptr);
     return *global_ctx->parent_ctx;
   }
 
