@@ -14,6 +14,7 @@
 #include "bf/memory/bf_crt_allocator.hpp"  // CRTAllocator
 #include "bf/memory/bf_memory_utils.h"     // bfKilobytes
 
+#include <cstdlib>  // abort
 #include <utility>  // exchange
 
 namespace bf
@@ -51,7 +52,7 @@ namespace bf
   }
 
   MemoryContext::MemoryContext(IMemoryManager* general_heap, LinearAllocator* temp_heap) :
-    parent_ctx{std::exchange(getMemContextFast(), this)},
+    parent_ctx{std::exchange(getMemContext(), this)},
     general_heap{general_heap ? general_heap : parent_ctx->general_heap},
     temp_heap{temp_heap ? temp_heap : parent_ctx->temp_heap}
   {
