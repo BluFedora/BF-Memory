@@ -75,7 +75,7 @@ namespace bf
      *   The size of the block to allocate.
      *
      * @return void*
-     *   The begginning to the allocated block.
+     *   The beginning to the allocated block.
      *   nullptr if the request could not be fulfilled.
      */
     virtual void* allocate(std::size_t size) = 0;
@@ -391,7 +391,8 @@ namespace bf
           {
             for (std::size_t i = 0; i < old_size; ++i)
             {
-              new (new_ptr + i) T(std::move(old_ptr[i]));
+              T& old_obj = old_ptr[i];
+              new (new_ptr + i) T(std::move(old_obj));
             }
 
             deallocateArray(old_ptr);
@@ -450,6 +451,63 @@ namespace bf
     void         deallocateAligned(std::size_t header_size, void* ptr, std::size_t size, std::size_t alignment);
   };
 
+  namespace memory
+  {
+    //-------------------------------------------------------------------------------------//
+    // Unmanaged Array API
+    //-------------------------------------------------------------------------------------//
+
+    template<typename T>
+    inline T* allocateUnmanagedArray(std::size_t num_elements);
+
+    template<typename T>
+    inline T* reallocateUnmanagedArray(T* ptr, std::size_t old_elements, std::size_t new_num_elements);
+
+    template<typename T>
+    inline void deallocateUnmanagedArray(T* ptr, std::size_t num_elements);
+
+    //-------------------------------------------------------------------------------------//
+    // Aligned Allocations API
+    //-------------------------------------------------------------------------------------//
+
+    void* allocateAligned(std::size_t size, std::size_t alignment);
+
+    void deallocateAligned(void* ptr, std::size_t size, std::size_t alignment);
+
+    //-------------------------------------------------------------------------------------//
+    // Templated API
+    //-------------------------------------------------------------------------------------//
+
+    template<typename T, typename... Args>
+    T* allocateT(Args&&... args);
+
+    template<typename T>
+    void deallocateT(T* ptr);
+
+    //-------------------------------------------------------------------------------------//
+    // Array API
+    //   The Array api takes up extra memory for header and alignment.
+    //-------------------------------------------------------------------------------------//
+
+    template<typename T>
+    T* allocateArray(std::size_t num_elements, std::size_t array_alignment = alignof(T));
+
+    template<typename T>
+    T* allocateArrayTrivial(std::size_t num_elements, std::size_t array_alignment = alignof(T));
+
+    template<typename T>
+    static std::size_t arraySize(const T* const ptr);
+
+    template<typename T>
+    static std::size_t arrayAlignment(const T* const ptr);
+
+    template<typename T>
+    T* arrayResize(T* const old_ptr, std::size_t num_elements, std::size_t array_alignment = alignof(T));
+
+    template<typename T>
+    void deallocateArray(T* const ptr);
+  }  // namespace memory
+
   /*!
    * @brief
    *   This is an abstract base class with some useful bounds checking functionality.
@@ -477,6 +535,7 @@ namespace bf
     void        checkPointer(const void* ptr) const;
   };
 
+  // TODO(SR): This API Should be removed..
   class ScopedBuffer
   {
    private:

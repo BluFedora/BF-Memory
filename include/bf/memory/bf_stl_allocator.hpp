@@ -1,7 +1,7 @@
 /******************************************************************************/
 /*!
  * @file   bf_stl_allocator.hpp
- * @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
+ * @author Shareef Raheem (https://blufedora.github.io/)
  * @date   2019-12-26
  * @brief
  *   > This allocator is a designed for use with stl containers.
@@ -11,7 +11,7 @@
  *  References:
  *    [https://howardhinnant.github.io/allocator_boilerplate.html]
  *
- * @copyright Copyright (c) 2019-2022
+ * @copyright Copyright (c) 2019-2022 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef BF_STL_ALLOCATOR_HPP

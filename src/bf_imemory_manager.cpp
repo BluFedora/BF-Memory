@@ -1,15 +1,15 @@
 /******************************************************************************/
 /*!
-* @file   bf_imemory_manager.cpp
-* @author Shareef Abdoul-Raheem (http://sblufedora.github.io/)
-* @brief
-*  Outlines a basic interface for the various types of memory managers.
-*
-* @version 0.0.1
-* @date    2019-12-26
-*
-* @copyright Copyright (c) 2019-2021
-*/
+ * @file   bf_imemory_manager.cpp
+ * @author Shareef Abdoul-Raheem (http://sblufedora.github.io/)
+ * @brief
+ *  Outlines a basic interface for the various types of memory managers.
+ *
+ * @version 0.0.1
+ * @date    2019-12-26
+ *
+ * @copyright Copyright (c) 2019-2021
+ */
 /******************************************************************************/
 #include "bf/memory/bf_imemory_manager.hpp"
 
@@ -98,7 +98,7 @@ namespace bf
       throw std::exception(/* "This pointer is not within this pool. "*/);
     }
   }
-}  // namespace bifrost
+}  // namespace bf
 
 /******************************************************************************/
 /*
