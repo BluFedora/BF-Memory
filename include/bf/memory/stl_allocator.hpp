@@ -1,15 +1,15 @@
 /******************************************************************************/
 /*!
- * @file   bf_stl_allocator.hpp
+ * @file   stl_allocator.hpp
  * @author Shareef Raheem (https://blufedora.github.io/)
  * @date   2019-12-26
  * @brief
  *   > This allocator is a designed for use with stl containers.
- *   > This must only be used in C++11 or later because C++03 required all
- *     allocators of a certain type to be compatible but this allocator is stateful.
+ *   > This must only be used in C++11 or later because C++03 required all allocators of a certain type to be compatible but this allocator is stateful.
  *
  *  References:
- *    [https://howardhinnant.github.io/allocator_boilerplate.html]
+ *    - [Allocator Boilerplate](https://howardhinnant.github.io/allocator_boilerplate.html)
+ *    - [MSVC Allocators](https://docs.microsoft.com/en-us/cpp/standard-library/allocators?view=msvc-170)
  *
  * @copyright Copyright (c) 2019-2022 Shareef Abdoul-Raheem
  */
@@ -17,15 +17,13 @@
 #ifndef BF_STL_ALLOCATOR_HPP
 #define BF_STL_ALLOCATOR_HPP
 
-#include "bf_allocators.hpp" /* IMemoryManager, GeneralHeap */
-
-#include <limits> /* numeric_limits<T> */
+#include "bf_allocators.hpp" /* IAllocator, GeneralHeap */
 
 namespace bf
 {
   /*
      C++11/14 Allocator 'Concept'
-    
+
      Traits:
        value_type                             T
        pointer                                T*
@@ -37,7 +35,7 @@ namespace bf
        propagate_on_container_move_assignment std::true_ty
        rebind                                 template< class U > struct rebind { typedef allocator<U> other; };
        is_always_equal                        std::true_type
-    
+
      Methods:
        ctor / dtor
        address
@@ -46,7 +44,7 @@ namespace bf
        max_size
        construct
        destroy
-    
+
      Operators:
        operator==
        operator!=
@@ -54,22 +52,51 @@ namespace bf
     ********************************************************************************
 
      C++17 Allocator 'Concept'
-    
+
      Traits:
        value_type                             T
+       size_type                              std::size_t
+       difference_type                        std::ptrdiff_t
        propagate_on_container_move_assignment std::true_type
        is_always_equal                        std::true_type
-    
+
      Methods:
        ctor / dtor
        allocate
        deallocate
-    
+
      Operators:
        operator==
        operator!=
+
+     ********************************************************************************
+
+     C++20/23 Allocator 'Concept'
+
+     Traits:
+       value_type                             T
+       size_type                              std::size_t
+       difference_type                        std::ptrdiff_t
+       propagate_on_container_move_assignment std::true_type
+       is_always_equal                        std::true_type (deprecated in C++23)
+
+     Methods:
+       ctor / dtor
+       allocate
+       allocate_at_least (added in C++23)
+       deallocate
+
+     Operators:
+       constexpr operator==
   */
 
+  /*!
+   * @brief
+   *   Provides an STL compliant proxy for the IAllocator API.
+   *
+   * @tparam T
+   *   The type of object this allocated expects to make memory for.
+   */
   template<typename T>
   class StlAllocator
   {
@@ -79,7 +106,7 @@ namespace bf
     using void_pointer                           = void *;
     using const_void_pointer                     = const void *;
     using difference_type                        = std::ptrdiff_t;
-    using size_type                              = std::size_t;  // std::make_unsigned_t<difference_type>
+    using size_type                              = std::size_t;
     using reference                              = T &;
     using const_reference                        = const T &;
     using value_type                             = T;
@@ -96,10 +123,10 @@ namespace bf
     };
 
    private:
-    IMemoryManager &m_MemoryBackend;
+    IAllocator &m_MemoryBackend;
 
    public:
-    StlAllocator(IMemoryManager &backend = GeneralHeap()) noexcept :
+    StlAllocator(IAllocator &backend = GeneralHeap()) noexcept :
       m_MemoryBackend{backend}
     {
     }
@@ -110,12 +137,12 @@ namespace bf
     {
     }
 
-    static size_type max_size() noexcept { return std::numeric_limits<size_t>::max() / sizeof(value_type); }
+    static size_type max_size() noexcept { return static_cast<size_type>(-1) / sizeof(value_type); }
 
-    pointer       address(reference x) const noexcept { return &x; }
-    const_pointer address(const_reference x) const noexcept { return &x; }
-    pointer       allocate(size_type s) { return s ? reinterpret_cast<pointer>(m_MemoryBackend.allocate(s * sizeof(T))) : nullptr; }
-    void          deallocate(pointer p, size_type s) { m_MemoryBackend.deallocate(p, s * sizeof(T)); }
+    pointer                         address(reference x) const noexcept { return &x; }
+    const_pointer                   address(const_reference x) const noexcept { return &x; }
+    [[nodiscard]] constexpr pointer allocate(size_type s) { return s ? bfMemAllocateArray<T>(m_MemoryBackend, s) : nullptr; }
+    constexpr void                  deallocate(pointer p, size_type s) { bfMemDeallocateArray(m_MemoryBackend, p, s); }
 
     template<class U, class... Args>
     void construct(U *p, Args &&...args)
@@ -131,11 +158,21 @@ namespace bf
 
     StlAllocator select_on_container_copy_construction() const noexcept { return *this; }
 
-    bool operator==(const StlAllocator<T> &rhs) const noexcept { return &m_MemoryBackend == &rhs.m_MemoryBackend; }
-    bool operator!=(const StlAllocator<T> &rhs) const noexcept { return &m_MemoryBackend != &rhs.m_MemoryBackend; }
+    template<class U>
+    constexpr bool operator==(const StlAllocator<U> &rhs) const noexcept
+    {
+      return &backend() == &rhs.backend();
+    }
 
-    IMemoryManager &backend() { return m_MemoryBackend; }
+    template<class U>
+    constexpr bool operator!=(const StlAllocator<U> &rhs) const noexcept
+    {
+      return &backend() != &rhs.backend();
+    }
+
+    IAllocator &backend() const { return m_MemoryBackend; }
   };
+
 }  // namespace bf
 
 #endif /* BF_STL_ALLOCATOR_HPP */

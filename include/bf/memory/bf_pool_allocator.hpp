@@ -1,16 +1,14 @@
 /******************************************************************************/
 /*!
-* @file   bf_pool_allocator.hpp
-* @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
-* @brief
-*   This allocator is a designed for static (known at compile time)
-*   pools of objects. Features O(1) allocation and O(1) deletion.
-*
-* @version 0.0.1
-* @date    2019-12-26
-*
-* @copyright Copyright (c) 2019-2021
-*/
+ * @file   bf_pool_allocator.hpp
+ * @author Shareef Raheem (https://blufedora.github.io/)
+ * @date   2019-12-26
+ * @brief
+ *   This allocator is a designed for static (known at compile time)
+ *   pools of objects. Features O(1) allocation and O(1) deletion.
+ *
+ * @copyright Copyright (c) 2019-2022 Shareef Abdoul-Raheem
+ */
 /******************************************************************************/
 #ifndef BF_POOL_ALLOCATOR_HPP
 #define BF_POOL_ALLOCATOR_HPP
@@ -31,9 +29,8 @@ namespace bf
   class PoolAllocatorImpl : public MemoryManager
   {
    protected:
-    class PoolHeader
+    struct PoolHeader
     {
-     public:
       PoolHeader* next;
     };
 
@@ -107,7 +104,7 @@ namespace bf
 /*
   MIT License
 
-  Copyright (c) 2019-2021 Shareef Abdoul-Raheem
+  Copyright (c) 2019-2022 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
