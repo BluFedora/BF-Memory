@@ -247,7 +247,7 @@ void* bfAlignUpPointer(const void* const ptr, const size_t required_alignment);
 /*!
  * @brief
  *   Implements "std::align" but in C.
- *   `size` must be <= *space or ths functions will always fail.
+ *   `size` must be <= *space or this functions will always fail.
  *
  * @param[in] alignment
  *   The alignment that you are wanting the pointer to be at.
@@ -507,35 +507,36 @@ void bfMemDeallocateAligned(bf::IAllocator& self, T* const ptr);
  * @tparam T
  *   The type of array.
  *
+ * @tparam init
+ *   The policy to used to initialize the bytes.
+ * 
  * @param mem_block
  *   The memory block ot initialize treated as an array of \p T.
  *
  * @param num_elements
  *   The number of elements in the array.
  *
- * @param init
- *   The policy to used to initialize the bytes.
- *
  * @return
  *   The type casted block of memory into it's correct array type.
  */
-template<typename T>
-T* bfMemArrayInit(const bf::AllocationResult mem_block, const std::size_t num_elements, const bf::MemArrayInit init);
+template<typename T, bf::MemArrayInit init>
+T* bfMemArrayInit(const bf::AllocationResult mem_block, const std::size_t num_elements);
 
 /*!
  * @brief
  *   Allocates an array of type \p T of length \p num_elements.
+ * 
  * @tparam T
  *   The type of array.
  *
+ * @tparam init
+ *   Initialization policy to apply to the array.
+ * 
  * @param self
  *   The allocator to request memory from.
  *
  * @param num_elements
  *   The number of elements in the array.
- *
- * @param init
- *   Initialization policy to apply to the array.
  *
  * @return
  *   On Success: An array of \p num_elements length.
@@ -543,8 +544,8 @@ T* bfMemArrayInit(const bf::AllocationResult mem_block, const std::size_t num_el
  *
  * @see bf::MemArrayInit
  */
-template<typename T>
-T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements, const bf::MemArrayInit init = bf::MemArrayInit::UNINITIALIZE);
+template<typename T, bf::MemArrayInit init = bf::MemArrayInit::UNINITIALIZE>
+T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements);
 
 /*!
  * @brief
@@ -612,8 +613,8 @@ void bfMemDeallocateArray(bf::IAllocator& self, T* const array, const std::size_
  *
  * @see bfMemDeallocateArrayAligned
  */
-template<typename T>
-T* bfMemAllocateArrayAligned(bf::IAllocator& self, const std::size_t num_elements, const bf::MemArrayInit init = bf::MemArrayInit::UNINITIALIZE, const std::size_t alignment = alignof(T));
+template<typename T, bf::MemArrayInit init = bf::MemArrayInit::UNINITIALIZE>
+T* bfMemAllocateArrayAligned(bf::IAllocator& self, const std::size_t num_elements, const std::size_t alignment = alignof(T));
 
 /*!
  * @brief
@@ -707,41 +708,35 @@ void bfMemDeallocateAligned(bf::IAllocator& self, T* const ptr)
   }
 }
 
-template<typename T>
-T* bfMemArrayInit(const bf::AllocationResult mem_block, const std::size_t num_elements, const bf::MemArrayInit init)
+template<typename T, bf::MemArrayInit init>
+T* bfMemArrayInit(const bf::AllocationResult mem_block, const std::size_t num_elements)
 {
   T* const typed_array = static_cast<T*>(mem_block.ptr);
 
   if (typed_array)
   {
-    switch (init)
+    if constexpr (init == bf::MemArrayInit::UNINITIALIZE)
     {
-      case bf::MemArrayInit::UNINITIALIZE:
-      {
-        break;
-      }
-      case bf::MemArrayInit::DEFAULT_CONSTRUCT:
-      {
-        std::uninitialized_default_construct(typed_array, typed_array + num_elements);
-        break;
-      }
-      case bf::MemArrayInit::VALUE_CONSTRUCT:
-      {
-        std::uninitialized_value_construct(typed_array, typed_array + num_elements);
-        break;
-      }
+    }
+    else if constexpr (init == bf::MemArrayInit::DEFAULT_CONSTRUCT)
+    {
+      std::uninitialized_default_construct(typed_array, typed_array + num_elements);
+    }
+    else if constexpr (init == bf::MemArrayInit::VALUE_CONSTRUCT)
+    {
+      std::uninitialized_value_construct(typed_array, typed_array + num_elements);
     }
   }
 
   return typed_array;
 }
 
-template<typename T>
-T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements, const bf::MemArrayInit init)
+template<typename T, bf::MemArrayInit init>
+T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements)
 {
   const bf::AllocationResult mem_block = bfMemAllocate(self, sizeof(T) * num_elements);
 
-  return bfMemArrayInit<T>(mem_block, num_elements, init);
+  return bfMemArrayInit<T, init>(mem_block, num_elements);
 }
 
 template<typename T>
@@ -768,12 +763,12 @@ void bfMemDeallocateArray(bf::IAllocator& self, T* const array, const std::size_
   }
 }
 
-template<typename T>
-T* bfMemAllocateArrayAligned(bf::IAllocator& self, const std::size_t num_elements, const bf::MemArrayInit init, const std::size_t alignment)
+template<typename T, bf::MemArrayInit init>
+T* bfMemAllocateArrayAligned(bf::IAllocator& self, const std::size_t num_elements, const std::size_t alignment)
 {
   const bf::AllocationResult mem_block = bfMemAllocateAligned(self, sizeof(T) * num_elements, alignment);
 
-  return bfMemArrayInit<T>(mem_block, num_elements, init);
+  return bfMemArrayInit<T, init>(mem_block, num_elements);
 }
 
 template<typename T>

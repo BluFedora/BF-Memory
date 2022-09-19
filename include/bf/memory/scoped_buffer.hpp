@@ -44,11 +44,13 @@ namespace bf
     std::size_t size() const { return num_elements; }
 
     // Returns true on a succesful resize.
-    bool resize(const std::size_t new_size, const MemArrayInit new_element_init = MemArrayInit::UNINITIALIZE)
+
+    template<MemArrayInit new_element_init = MemArrayInit::UNINITIALIZE>
+    bool resize(const std::size_t new_size)
     {
       if (num_elements != new_size)
       {
-        T* const new_buffer = bfMemAllocateArray<T>(memory, new_size, MemArrayInit::UNINITIALIZE);
+        T* const new_buffer = bfMemAllocateArray<T, MemArrayInit::UNINITIALIZE>(memory, new_size);
 
         if (new_buffer)
         {
@@ -59,7 +61,7 @@ namespace bf
           const T* const    new_buffer_end   = new_buffer + new_size;
           const std::size_t num_new_elements = (new_buffer_end - new_buffer_move_end);
 
-          bfMemArrayInit<T>({new_buffer_move_end, num_new_elements * sizeof(T)}, num_new_elements, new_element_init);
+          bfMemArrayInit<T, new_element_init>({new_buffer_move_end, num_new_elements * sizeof(T)}, num_new_elements);
 
           num_elements = new_size;
           buffer       = new_buffer;
