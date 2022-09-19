@@ -3,37 +3,26 @@
 #                              BF MEMORY PROJECT                               #
 #                                                                              #
 ################################################################################
-###         Polymorphic Memory Allocator Library For C++14 and above.        ###
+###         Polymorphic Memory Allocator Library For C++17 and above.        ###
 ################################################################################
 
 cmake_minimum_required(VERSION 3.12)
 
-project(BF_Memory VERSION 0.1.3 DESCRIPTION "Custom allocator interface for various allocation schemes.")
+project(BF_Memory VERSION 1.0.0 DESCRIPTION "Custom allocator interface for various allocation schemes.")
 
 add_library(BF_Memory STATIC
 
     # Headers
-    "include/bf/memory/bf_allocators.hpp"
-    "include/bf/memory/bf_crt_allocator.hpp"
-    "include/bf/memory/bf_freelist_allocator.hpp"
-    "include/bf/memory/bf_imemory_manager.hpp"
-    "include/bf/memory/bf_linear_allocator.hpp"
-    "include/bf/memory/bf_memory_utils.h"
-    "include/bf/memory/bf_pool_allocator.hpp"
-    "include/bf/memory/bf_proxy_allocator.hpp"
-    "include/bf/memory/bf_stack_allocator.hpp"
-    "include/bf/memory/bf_stl_allocator.hpp"
+    "include/bf/memory/basic_allocators.hpp"
+    "include/bf/memory/crt_allocator.hpp"
+    "include/bf/memory/memory_api.hpp"
+    "include/bf/memory/scoped_buffer.hpp"
+    "include/bf/memory/stl_allocator.hpp"
 
     # Sources
-    "src/bf_allocators.cpp"
-    "src/bf_crt_allocator.cpp"
-    "src/bf_freelist_allocator.cpp"
-    "src/bf_imemory_manager.cpp"
-    "src/bf_linear_allocator.cpp"
-    "src/bf_memory_utils.c"
-    "src/bf_pool_allocator.cpp"
-    "src/bf_proxy_allocator.cpp"
-    "src/bf_stack_allocator.cpp"
+    "src/basic_allocators.cpp"
+    "src/crt_allocator.cpp"
+    "src/memory_api.cpp"
 )
 
 target_include_directories(
@@ -45,7 +34,7 @@ target_include_directories(
 target_compile_features(
   BF_Memory
   PUBLIC
-    cxx_std_14
+    cxx_std_17
 )
 
 set_property(TARGET BF_Memory PROPERTY FOLDER "BluFedora/Foundation")

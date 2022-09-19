@@ -1,45 +1,35 @@
 /******************************************************************************/
 /*!
-* @file   bf_crt_allocator.hpp
-* @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
-* @brief
-*  This allocator is a wrapper around the built in memory allocator.
-*  Implemented using "malloc / calloc" and "free".
-*  TODO Look Into Alignment: [https://johanmabille.github.io/blog/2014/12/06/aligned-memory-allocator/]
-*
-* @version 0.0.1
-* @date    2019-12-26
-*
-* @copyright Copyright (c) 2019-2021
-*/
+ * @file   crt_allocator.hpp
+ * @author Shareef Abdoul-Raheem (https://blufedora.github.io/)
+ * @date   2019-12-26
+ * @brief
+ *  This allocator is a wrapper around the built in memory allocator.
+ *  Implemented using "malloc" and "free".
+ *
+ * @copyright Copyright (c) 2019-2022
+ */
 /******************************************************************************/
 #ifndef BF_CRT_ALLOCATOR_HPP
 #define BF_CRT_ALLOCATOR_HPP
 
-#include "bf_imemory_manager.hpp"
+#include "memory_api.hpp"
 
 namespace bf
 {
-  class CRTAllocator final : public IMemoryManager
+  struct CRTAllocator : public IAllocator
   {
-   public:
     CRTAllocator();
-
-   public:
-    void* allocate(std::size_t size) override;
-    void  deallocate(void* ptr, std::size_t num_bytes) override;
-
-    static constexpr std::size_t header_size = 0u;
   };
-}  // namespace bifrost
+}  // namespace bf
 
-#endif  /* BF_C_ALLOCATOR_HPP */
+#endif /* BF_CRT_ALLOCATOR_HPP */
 
 /******************************************************************************/
 /*
   MIT License
 
-  Copyright (c) 2019-2021 Shareef Abdoul-Raheem
+  Copyright (c) 2019-2022 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
