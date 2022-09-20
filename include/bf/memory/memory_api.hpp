@@ -134,6 +134,16 @@ namespace bf
 
   /*!
    * @brief
+   *   Describes the way memory should be destroyed.
+   */
+  enum class MemArrayDestroy
+  {
+    NONE,      //!< Memory is left alone.
+    DESTRUCT,  //!< Will destruct the memory to type `T`.
+  };
+
+  /*!
+   * @brief
    *   Usage:
    *   Declare a AllocatorScope on the stack to reassign the global allocator.
    *
@@ -509,7 +519,7 @@ void bfMemDeallocateAligned(bf::IAllocator& self, T* const ptr);
  *
  * @tparam init
  *   The policy to used to initialize the bytes.
- * 
+ *
  * @param mem_block
  *   The memory block ot initialize treated as an array of \p T.
  *
@@ -525,13 +535,13 @@ T* bfMemArrayInit(const bf::AllocationResult mem_block, const std::size_t num_el
 /*!
  * @brief
  *   Allocates an array of type \p T of length \p num_elements.
- * 
+ *
  * @tparam T
  *   The type of array.
  *
  * @tparam init
  *   Initialization policy to apply to the array.
- * 
+ *
  * @param self
  *   The allocator to request memory from.
  *
@@ -550,6 +560,7 @@ T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements);
 /*!
  * @brief
  *   Allocates an array of type \p T of length \p num_elements.
+ *
  * @tparam T
  *   The type of array.
  *
@@ -573,8 +584,13 @@ T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements, cons
 
 /*!
  * @brief
+ *   Free memory allocated from bfMemAllocateArray.
+ *
  * @tparam T
  *   The type of array.
+ *
+ * @tparam destroy
+ *   Destruction policy.
  *
  * @param self
  *   The allocator to return memory to.
@@ -585,7 +601,7 @@ T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements, cons
  *
  * @see bfMemAllocateArray
  */
-template<typename T>
+template<bf::MemArrayDestroy destroy = bf::MemArrayDestroy::NONE, typename T>
 void bfMemDeallocateArray(bf::IAllocator& self, T* const array, const std::size_t num_elements);
 
 /*!
@@ -651,6 +667,9 @@ T* bfMemAllocateArrayAligned(bf::IAllocator& self, const std::size_t num_element
  * @tparam T
  *   The type of array.
  *
+ * @tparam destroy
+ *   Destruction policy.
+ *
  * @param self
  *   The allocator to return memory to.
  *
@@ -665,7 +684,7 @@ T* bfMemAllocateArrayAligned(bf::IAllocator& self, const std::size_t num_element
  *
  * @see bfMemAllocateArrayAligned
  */
-template<typename T>
+template<bf::MemArrayDestroy destroy = bf::MemArrayDestroy::NONE, typename T>
 void bfMemDeallocateArrayAligned(bf::IAllocator& self, T* const array, const std::size_t num_elements, const std::size_t alignment = alignof(T));
 
 //-------------------------------------------------------------------------------------//
@@ -754,11 +773,21 @@ T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements, cons
   return bfMemArrayInit<T>(mem_block, num_elements, value);
 }
 
-template<typename T>
+template<bf::MemArrayDestroy destroy, typename T>
+void bfMemDestructArray(T* const array, const std::size_t num_elements)
+{
+  if constexpr (destroy == bf::MemArrayDestroy::DESTRUCT)
+  {
+    std::destroy_n(array, num_elements);
+  }
+}
+
+template<bf::MemArrayDestroy destroy, typename T>
 void bfMemDeallocateArray(bf::IAllocator& self, T* const array, const std::size_t num_elements)
 {
   if (array && num_elements)
   {
+    bfMemDestructArray<destroy>(array, num_elements);
     bfMemDeallocate(self, bf::AllocationResult{array, sizeof(T) * num_elements});
   }
 }
@@ -779,11 +808,12 @@ T* bfMemAllocateArrayAligned(bf::IAllocator& self, const std::size_t num_element
   return bfMemArrayInit<T>(mem_block, num_elements, value);
 }
 
-template<typename T>
+template<bf::MemArrayDestroy destroy, typename T>
 void bfMemDeallocateArrayAligned(bf::IAllocator& self, T* const array, const std::size_t num_elements, const std::size_t alignment)
 {
   if (array && num_elements)
   {
+    bfMemDestructArray<destroy>(array, num_elements);
     bfMemDeallocateAligned(self, bf::AllocationResult{array, sizeof(T) * num_elements}, alignment);
   }
 }
