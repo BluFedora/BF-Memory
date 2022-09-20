@@ -64,6 +64,8 @@ std::size_t bfMemAlignOffset(const void* const ptr, const std::size_t alignment)
   return bfCast(aligned_ptr, char*) - bfCast(ptr, char*);
 }
 
+#undef bfCast
+
 void bfMemCopy(void* const dst, const void* const src, std::size_t num_bytes)
 {
   std::memcpy(dst, src, num_bytes);
@@ -177,10 +179,8 @@ bf::AllocationResult bfMemAllocateAligned(bf::IAllocator& self, const std::size_
 void bfMemDeallocateAligned(bf::IAllocator& self, const bf::AllocationResult mem_block, const std::size_t alignment)
 {
   const AlignmentHeader offset           = alignedAllocationOffset(mem_block.ptr);
-  const std::size_t     allocation_size  = alignedAllocationSize(mem_block.num_bytes + offset, alignment);
+  const std::size_t     allocation_size  = alignedAllocationSize(mem_block.num_bytes, alignment);
   void* const           allocation_start = reinterpret_cast<void*>(std::uintptr_t(mem_block.ptr) - offset);
 
   bfMemDeallocate(self, bf::AllocationResult{allocation_start, allocation_size});
 }
-
-#undef bfCast
