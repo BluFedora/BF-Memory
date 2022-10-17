@@ -90,7 +90,8 @@ namespace bf
 
     if (memory_start + needed_memory <= self->mem_block_end)
     {
-      std::memcpy(memory_start, &needed_memory, sizeof(StackAllocatorHeader));
+      std::memcpy(memory_start, &size, sizeof(StackAllocatorHeader));
+      self->stack_ptr += needed_memory;
       return {memory_start + sizeof(StackAllocatorHeader), size};
     }
 
@@ -104,7 +105,7 @@ namespace bf
     std::memcpy(&block_size, block_start, sizeof(StackAllocatorHeader));
 
     bfMemAssert(block_size == mem_block.num_bytes, "Incorrect number of bytes passed in.");
-    bfMemAssert((block_start + block_size) == self->stack_ptr,
+    bfMemAssert((static_cast<byte*>(mem_block.ptr) + block_size) == self->stack_ptr,
                 "StackAllocator::dealloc : For this type of allocator you MUST deallocate in the reverse order of allocation.");
 
     self->stack_ptr = block_start;
