@@ -2,6 +2,7 @@
 
 #include "bf/memory/crt_allocator.hpp"
 
+#include <cstdarg>  // va_list, va_start, va_end
 #include <cstring>  // memset
 #include <limits>   // numeric_limits
 
@@ -10,11 +11,18 @@
 //-------------------------------------------------------------------------------------//
 
 #if BF_MEMORY_DEBUG_ASSERTIONS
-bool bfMemAssertImpl(const bool expr, const char* const expr_str, const char* const filename, const int line_number, const char* const assert_msg)
+bool bfMemAssertImpl(const bool expr, const char* const expr_str, const char* const filename, const int line_number, const char* const assert_msg, ...)
 {
   if (!expr)
   {
-    std::fprintf(stderr, "Memory[%s:%i] Assertion '%s' failed, %s.\n", filename, line_number, expr_str, assert_msg);
+    char assert_message_buffer[128];
+
+    va_list args;
+    va_start(args, assert_msg);
+    vsnprintf(assert_message_buffer, sizeof(assert_message_buffer), assert_msg, args);
+    va_end(args);
+
+    std::fprintf(stderr, "Memory[%s:%i] Assertion '%s' failed, %s.\n", filename, line_number, expr_str, assert_message_buffer);
     std::abort();
   }
 

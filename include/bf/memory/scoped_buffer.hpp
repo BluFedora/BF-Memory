@@ -6,6 +6,8 @@
  * @brief
  *   RAII Memory managed buffer.
  *
+ * @todo ScopedBuffer Implement move and copy constructors and assignment.
+ *
  * @copyright Copyright (c) 2019-2022 Shareef Abdoul-Raheem
  */
 /******************************************************************************/

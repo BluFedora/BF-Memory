@@ -32,6 +32,14 @@
 
 namespace bf
 {
+  template<typename T>
+  struct is_trivially_relocatable : public std::true_type
+  {
+  };
+
+  template<typename T>
+  inline constexpr bool is_trivially_relocatable_v = is_trivially_relocatable<T>::value;
+
   using byte = unsigned char;  //!< Type to represent a single byte of memory.
 
   /*!
@@ -208,11 +216,11 @@ inline const bf::AllocationResult& bfMemDebugWipeMemory(const bf::AllocationResu
 #define bfGigabytes(n) (bfMegabytes(n) * 1024)
 
 #if BF_MEMORY_DEBUG_ASSERTIONS
-bool bfMemAssertImpl(const bool expr, const char* const expr_str, const char* const filename, const int line_number, const char* const assert_msg);
+bool bfMemAssertImpl(const bool expr, const char* const expr_str, const char* const filename, const int line_number, const char* const assert_msg, ...);
 
-#define bfMemAssert(expr, msg) bfMemAssertImpl((expr), #expr, __FILE__, __LINE__, (msg))
+#define bfMemAssert(expr, msg, ...) bfMemAssertImpl((expr), #expr, __FILE__, __LINE__, (msg), ##__VA_ARGS__)
 #else
-#define bfMemAssert(expr, msg) (void)0
+#define bfMemAssert(expr, msg, ...) (bool)true
 #endif
 
 /*!
@@ -312,6 +320,31 @@ std::size_t bfMemAlignOffset(const void* const ptr, const std::size_t alignment)
  *   The number of bytes to copy from \p src to \p dst.
  */
 void bfMemCopy(void* const dst, const void* const src, std::size_t num_bytes);
+
+template<typename T>
+void bfMemDestructRange(T* const bgn, T* const end)
+{
+  if constexpr (!std::is_trivially_destructible_v<T>)
+  {
+    std::destroy(bgn, end);
+  }
+}
+
+template<typename SrcIterator, typename DstIterator>
+DstIterator bfMemUninitializedMove(SrcIterator src_bgn, SrcIterator src_end, DstIterator dst_bgn)
+{
+  return std::uninitialized_move(src_bgn, src_end, dst_bgn);
+}
+
+template<typename SrcIterator, typename DstIterator>
+DstIterator bfMemUninitializedMoveRev(SrcIterator src_bgn, SrcIterator src_end, DstIterator dst_end)
+{
+  return bfMemUninitializedMove(
+          std::make_reverse_iterator(src_end),
+          std::make_reverse_iterator(src_bgn),
+          std::make_reverse_iterator(dst_end))
+   .base();
+}
 
 //-------------------------------------------------------------------------------------//
 // Allocator Stack Interface: The stack is thread local.
