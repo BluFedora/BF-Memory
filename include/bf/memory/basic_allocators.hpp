@@ -134,12 +134,12 @@ namespace bf
   /*!
    * @copydoc PoolAllocator
    */
-  template<std::size_t block_size, std::size_t num_blocks, std::size_t alignment = alignof(std::max_align_t)>
+  template<std::size_t kblock_size, std::size_t num_blocks, std::size_t alignment = alignof(std::max_align_t)>
   struct FixedPoolAllocator : public PoolAllocator
   {
     static constexpr std::size_t header_alignment  = alignof(PoolAllocatorBlock);
     static constexpr std::size_t actual_alignment  = alignment < header_alignment ? header_alignment : alignment;
-    static constexpr std::size_t actual_block_size = bfAlignUpSize(block_size, actual_alignment);
+    static constexpr std::size_t actual_block_size = bfAlignUpSize(kblock_size, actual_alignment);
     static constexpr std::size_t memory_block_size = actual_block_size * num_blocks;
 
     /*!
