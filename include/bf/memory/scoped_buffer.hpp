@@ -44,9 +44,24 @@ namespace bf
     ScopedBuffer& operator=(ScopedBuffer&& rhs)      = delete;
 
     std::size_t size() const { return num_elements; }
+    T*          begin() { return buffer; }
+    T*          end() { return buffer + num_elements; }
+    const T*    begin() const { return buffer; }
+    const T*    end() const { return buffer + num_elements; }
 
-    // Returns true on a succesful resize.
+    T& operator[](const std::size_t index)
+    {
+      bfMemAssert(index < num_elements, "Out of bounds index (%i >= %i).\n", int(index), int(num_elements));
+      return buffer[index];
+    }
 
+    const T& operator[](const std::size_t index) const
+    {
+      bfMemAssert(index < num_elements, "Out of bounds index (%i >= %i).\n", int(index), int(num_elements));
+      return buffer[index];
+    }
+
+    // Returns true on a successful resize.
     template<MemArrayInit new_element_init = MemArrayInit::UNINITIALIZE>
     bool resize(const std::size_t new_size)
     {

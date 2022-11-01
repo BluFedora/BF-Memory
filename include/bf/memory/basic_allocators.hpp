@@ -129,6 +129,9 @@ namespace bf
     std::size_t indexOf(const void* ptr) const;
     void*       fromIndex(std::size_t index);  // The index must have been from 'indexOf'
     void        reset();
+
+    // memory_bgn bust be atleast `block_size` * `num_elements` in size.
+    static PoolAllocatorBlock* setupFreelist(byte* const memory_bgn, std::size_t block_size, std::size_t num_elements);
   };
 
   /*!
@@ -145,12 +148,97 @@ namespace bf
     /*!
      * @brief
      *   `buffer` is not initialized by design since the `PoolAllocator` ctor writes to every byte anyway.
-    */
+     */
     alignas(actual_alignment) byte buffer[memory_block_size];
 
     FixedPoolAllocator() :
       PoolAllocator(buffer, sizeof(buffer), actual_block_size)
     {
+    }
+  };
+
+  //-------------------------------------------------------------------------------------//
+  // Chunk Pool Allocator: Like PoolAllocator except that it grows in chunks.
+  //-------------------------------------------------------------------------------------//
+
+  template<std::size_t k_BlockSize, std::size_t k_NumBlocksInChunk>
+  struct FixedChunkPoolAllocator : public IAllocator
+  {
+    static_assert(k_NumBlocksInChunk > 0u, "Number of items in each chunk must be greater than 0.");
+
+    static constexpr std::size_t BlockSize        = k_BlockSize < sizeof(PoolAllocatorBlock) ? sizeof(PoolAllocatorBlock) : k_BlockSize;
+    static constexpr std::size_t NumBlocksInChunk = k_NumBlocksInChunk;
+
+    struct Chunk
+    {
+      byte   buffer[BlockSize * k_NumBlocksInChunk];
+      Chunk* next;
+    };
+
+    Chunk*              chunks;
+    PoolAllocatorBlock* pool_head;
+    IAllocator&         chunk_allocator;
+
+    FixedChunkPoolAllocator(IAllocator& allocator) :
+      IAllocator(
+       +[](IAllocator* const self_, const std::size_t size) -> AllocationResult {
+         bfMemAssert(size <= BlockSize, "This Allocator is made for Objects of size %u (not %u)!", unsigned(BlockSize), unsigned(size));
+
+         FixedChunkPoolAllocator* const self = static_cast<FixedChunkPoolAllocator*>(self_);
+
+       pool_alloc:
+         PoolAllocatorBlock* const block = self->pool_head;
+
+         if (block != nullptr)
+         {
+           self->pool_head = block->next;
+
+           return {reinterpret_cast<void*>(block), BlockSize};
+         }
+
+         Chunk* const new_chunk = bfMemAllocate<Chunk>(self->chunk_allocator);
+
+         if (new_chunk)
+         {
+           new_chunk->next = std::exchange(self->chunks, new_chunk);
+
+           self->pool_head = PoolAllocator::setupFreelist(
+            new_chunk->buffer,
+            BlockSize,
+            k_NumBlocksInChunk);
+
+           goto pool_alloc;
+         }
+
+         return AllocationResult::Null();
+       },
+       +[](IAllocator* const self_, const AllocationResult mem_block) -> void {
+         FixedChunkPoolAllocator* const self = static_cast<FixedChunkPoolAllocator*>(self_);
+
+         bfMemAssert(mem_block.num_bytes <= BlockSize, "That allocation did not come from this allocator.");
+
+         PoolAllocatorBlock* const block = static_cast<PoolAllocatorBlock*>(mem_block.ptr);
+
+         block->next = std::exchange(self->pool_head, block);
+       }),
+      chunks{nullptr},
+      pool_head{nullptr},
+      chunk_allocator{allocator}
+    {
+    }
+
+    ~FixedChunkPoolAllocator()
+    {
+      Chunk* chunk = chunks;
+
+      while (chunk)
+      {
+        Chunk* const next_chunk = chunk->next;
+
+        bfMemDeallocate(chunk_allocator, chunk);
+
+        chunk = next_chunk;
+      }
     }
   };
 

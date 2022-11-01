@@ -140,6 +140,11 @@ namespace bf
 
   static void pool_dealloc(PoolAllocator* const self, const AllocationResult mem_block)
   {
+    bfMemAssert(mem_block.num_bytes <= self->block_size, "That allocation did not come from this allocator.");
+
+    PoolAllocatorBlock* const block = static_cast<PoolAllocatorBlock*>(mem_block.ptr);
+
+    block->next = std::exchange(self->pool_head, block);
   }
 
   PoolAllocator::PoolAllocator(byte* const memory_block, std::size_t memory_block_size, std::size_t pool_block_size) :
@@ -167,11 +172,20 @@ namespace bf
 
   void PoolAllocator::reset()
   {
+    pool_head = setupFreelist(memory_bgn, block_size, num_elements);
+  }
+
+  PoolAllocatorBlock* PoolAllocator::setupFreelist(byte* const memory_bgn, std::size_t block_size, std::size_t num_elements)
+  {
+    bfMemAssert(block_size >= sizeof(PoolAllocatorBlock), "Each block must be atlease PoolAllocatorBlock in size.");
+
+    PoolAllocatorBlock* result;
+
     if (num_elements)
     {
-      pool_head = reinterpret_cast<PoolAllocatorBlock*>(memory_bgn);
+      result = reinterpret_cast<PoolAllocatorBlock*>(memory_bgn);
 
-      PoolAllocatorBlock* header = pool_head;
+      PoolAllocatorBlock* header = result;
 
       for (std::size_t i = 0; i < num_elements - 1; ++i)
       {
@@ -183,8 +197,10 @@ namespace bf
     }
     else
     {
-      pool_head = nullptr;
+      result = nullptr;
     }
+
+    return result;
   }
 
   //-------------------------------------------------------------------------------------//
