@@ -83,6 +83,26 @@ namespace bf
 
   /*!
    * @brief
+   *   Function used to allocate memory with alignment \p alignment.
+   *
+   * @param self
+   *   The allocator to request a memory block from.
+   *
+   * @param size
+   *   The number of bytes requested to allocate.
+   *
+   * @param alignment
+   *   The number of bytes the start of the allocation address will be aligned to.
+   *
+   * @return
+   *    On Success: An AllocationResult with a pointer to the block of memory and number of bytes
+   *                available (could be greater than \p size).
+   *    On Failure: An AllocationResult with a nullptr and num_bytes == 0u;
+   */
+  using MemAlignedAllocFn = AllocationResult (*)(struct IAllocator* const self, const std::size_t size, const std::size_t alignment);
+
+  /*!
+   * @brief
    *   Function used to free memory allocated from `MemAllocFn`.
    *
    * @param self
@@ -100,17 +120,21 @@ namespace bf
    */
   struct IAllocator
   {
-    const MemAllocFn   alloc;    //!< @copydoc MemAllocFn
-    const MemDeallocFn dealloc;  //!< @copydoc MemDeallocFn
-    IAllocator*        parent;   //!< private: parent allocator for the allocator stack.
+    const MemAllocFn   alloc;                  //!< @copydoc MemAllocFn
+    const std::size_t  default_min_alignment;  //!< The default alignment from the `alloc` function.
+    MemAlignedAllocFn  aligned_alloc;          //!< @copydoc MemAlignedAllocFn
+    const MemDeallocFn dealloc;                //!< @copydoc MemDeallocFn
+    IAllocator*        parent;                 //!< private: parent allocator for the allocator stack.
 
    protected:
     //-------------------------------------------------------------------------------------//
     // Only Subclasses should be able to call the constructor and destructor.
     //-------------------------------------------------------------------------------------//
 
-    IAllocator(MemAllocFn alloc, MemDeallocFn dealloc) :
+    IAllocator(MemAllocFn alloc, MemDeallocFn dealloc, std::size_t default_min_alignment, const MemAlignedAllocFn aligned_alloc = nullptr) :
       alloc{alloc},
+      default_min_alignment{default_min_alignment},
+      aligned_alloc{aligned_alloc},
       dealloc{dealloc},
       parent{nullptr}
     {
@@ -643,15 +667,15 @@ void bfMemDeallocateArray(bf::IAllocator& self, T* const array, const std::size_
  *
  * @tparam T
  *   The type of array.
- *
+ * 
+ * @tparam init
+ *   Initialization policy to apply to the array.
+ * 
  * @param self
  *   The allocator to request memory from.
  *
  * @param num_elements
  *   The number of elements in the array.
- *
- * @param init
- *   Initialization policy to apply to the array.
  *
  * @param alignment
  *   The desired minimum alignment of the beginning of the block of memory.
@@ -682,7 +706,7 @@ T* bfMemAllocateArrayAligned(bf::IAllocator& self, const std::size_t num_element
  *   The initial value to set the elements of the array to.
  *
  * @param alignment
- *   The desired minimum alignment of the beginning of the block of memory.
+ *   The desired minimum alignment of the beginning of the block of memory. `
  *
  * @return
  *   On Success: An array of \p num_elements length with alignment \p alignment.

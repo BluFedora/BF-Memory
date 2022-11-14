@@ -101,7 +101,7 @@ namespace bf
   }
 
   CRTAllocator::CRTAllocator() :
-    IAllocator(&crt_alloc, &crt_dealloc)
+    IAllocator(&crt_alloc, &crt_dealloc, alignof(max_align_t))
   {
   }
 }  // namespace bf

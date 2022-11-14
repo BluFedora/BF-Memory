@@ -3,6 +3,7 @@
 #include "bf/memory/crt_allocator.hpp"
 
 #include <cstdarg>  // va_list, va_start, va_end
+#include <cstdio>   // vsnprintf, stderr,
 #include <cstring>  // memset
 #include <limits>   // numeric_limits
 
@@ -131,14 +132,12 @@ void bfMemAllocatorPop(void)
 
 bf::AllocationResult bfMemAllocate(bf::IAllocator& self, const std::size_t size)
 {
-  if (size == 0u)
+  if (size != 0u)
   {
-    return bf::AllocationResult::Null();
+    return bfMemDebugWipeMemory(self.alloc(&self, size));
   }
 
-  const bf::AllocationResult ptr = self.alloc(&self, size);
-
-  return bfMemDebugWipeMemory(ptr);
+  return bf::AllocationResult::Null();
 }
 
 void bfMemDeallocate(bf::IAllocator& self, const bf::AllocationResult mem_block)
@@ -168,27 +167,45 @@ bf::AllocationResult bfMemAllocateAligned(bf::IAllocator& self, const std::size_
 {
   bfMemAssert(alignment <= std::numeric_limits<AlignmentHeader>::max(), "Alignment too large.");
 
-  const std::size_t          allocation_size = alignedAllocationSize(size, alignment);
-  const bf::AllocationResult allocation      = bfMemAllocate(self, allocation_size);
-
-  if (allocation)
+  if (alignment <= self.default_min_alignment)
   {
-    const std::uint8_t* const header_end  = static_cast<std::uint8_t*>(allocation.ptr) + sizeof(AlignmentHeader);
-    std::uint8_t* const       data_start  = static_cast<std::uint8_t*>(bfAlignUpPointer(header_end, alignment));
-    const AlignmentHeader     data_offset = AlignmentHeader(std::uintptr_t(data_start) - std::uintptr_t(allocation.ptr));
-    data_start[-1]                        = data_offset;
-
-    return bf::AllocationResult{data_start, allocation.num_bytes - data_offset};
+    return bfMemAllocate(self, size);
   }
+  else if (self.aligned_alloc)
+  {
+    return self.aligned_alloc(&self, size, alignment);
+  }
+  else
+  {
+    const std::size_t          allocation_size = alignedAllocationSize(size, alignment);
+    const bf::AllocationResult allocation      = bfMemAllocate(self, allocation_size);
 
-  return bf::AllocationResult::Null();
+    if (allocation)
+    {
+      const std::uint8_t* const header_end  = static_cast<std::uint8_t*>(allocation.ptr) + sizeof(AlignmentHeader);
+      std::uint8_t* const       data_start  = static_cast<std::uint8_t*>(bfAlignUpPointer(header_end, alignment));
+      const AlignmentHeader     data_offset = AlignmentHeader(std::uintptr_t(data_start) - std::uintptr_t(allocation.ptr));
+      data_start[-1]                        = data_offset;
+
+      return bf::AllocationResult{data_start, allocation.num_bytes - data_offset};
+    }
+
+    return bf::AllocationResult::Null();
+  }
 }
 
 void bfMemDeallocateAligned(bf::IAllocator& self, const bf::AllocationResult mem_block, const std::size_t alignment)
 {
-  const AlignmentHeader offset           = alignedAllocationOffset(mem_block.ptr);
-  const std::size_t     allocation_size  = alignedAllocationSize(mem_block.num_bytes, alignment);
-  void* const           allocation_start = reinterpret_cast<void*>(std::uintptr_t(mem_block.ptr) - offset);
+  if (alignment <= self.default_min_alignment || self.aligned_alloc)
+  {
+    bfMemDeallocate(self, mem_block);
+  }
+  else
+  {
+    const AlignmentHeader offset           = alignedAllocationOffset(mem_block.ptr);
+    const std::size_t     allocation_size  = alignedAllocationSize(mem_block.num_bytes, alignment);
+    void* const           allocation_start = reinterpret_cast<void*>(std::uintptr_t(mem_block.ptr) - offset);
 
-  bfMemDeallocate(self, bf::AllocationResult{allocation_start, allocation_size});
+    bfMemDeallocate(self, bf::AllocationResult{allocation_start, allocation_size});
+  }
 }
