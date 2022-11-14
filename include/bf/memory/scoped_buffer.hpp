@@ -7,6 +7,7 @@
  *   RAII Memory managed buffer.
  *
  * @todo ScopedBuffer Implement move and copy constructors and assignment.
+ * @todo ScopedBuffer define destruction sematics.
  *
  * @copyright Copyright (c) 2019-2022 Shareef Abdoul-Raheem
  */
@@ -69,7 +70,7 @@ namespace bf
       {
         T* const new_buffer = bfMemAllocateArray<T, MemArrayInit::UNINITIALIZE>(memory, new_size);
 
-        if (new_buffer)
+        if (new_buffer || new_size == 0u)
         {
           const std::size_t num_move_elements   = num_elements < new_size ? num_elements : new_size;
           T* const          new_buffer_move_end = std::uninitialized_move(buffer, buffer + num_move_elements, new_buffer);
