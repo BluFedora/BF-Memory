@@ -228,7 +228,7 @@ namespace bf
     {
     }
 
-    ~FixedChunkPoolAllocator()
+    void clear()
     {
       Chunk* chunk = chunks;
 
@@ -240,6 +240,14 @@ namespace bf
 
         chunk = next_chunk;
       }
+
+      chunks    = nullptr;
+      pool_head = nullptr;
+    }
+
+    ~FixedChunkPoolAllocator()
+    {
+      clear();
     }
   };
 
