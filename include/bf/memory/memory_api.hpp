@@ -11,7 +11,7 @@
  *   Random Memory Notes:
  *     - new and malloc will always return memory aligned to alignof(std::max_align_t).
  *
- * @copyright Copyright (c) 2022 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2022-2023 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef BF_MEMORY_API_HPP
@@ -23,7 +23,7 @@
 #include <utility>  // forward, move
 
 #ifndef BF_MEMORY_DEBUG_WIPE_MEMORY
-#define BF_MEMORY_DEBUG_WIPE_MEMORY 1  //!< Unitialized memory will be wiped to a known value, disable for shipping build.
+#define BF_MEMORY_DEBUG_WIPE_MEMORY 1  //!< Uninitialized memory will be wiped to a known value, disable for shipping build.
 #endif
 
 #ifndef BF_MEMORY_DEBUG_ASSERTIONS
@@ -345,10 +345,13 @@ std::size_t bfMemAlignOffset(const void* const ptr, const std::size_t alignment)
  */
 void bfMemCopy(void* const dst, const void* const src, std::size_t num_bytes);
 
-template<typename T>
-void bfMemDestructRange(T* const bgn, T* const end)
+template<typename Iterator>
+void bfMemDestructRange(const Iterator bgn, const Iterator end)
 {
-  if constexpr (!std::is_trivially_destructible_v<T>)
+  using Traits     = std::iterator_traits<Iterator>;
+  using value_type = typename Traits::value_type;
+
+  if constexpr (!std::is_trivially_destructible_v<value_type>)
   {
     std::destroy(bgn, end);
   }
@@ -667,10 +670,10 @@ void bfMemDeallocateArray(bf::IAllocator& self, T* const array, const std::size_
  *
  * @tparam T
  *   The type of array.
- * 
+ *
  * @tparam init
  *   Initialization policy to apply to the array.
- * 
+ *
  * @param self
  *   The allocator to request memory from.
  *
@@ -881,7 +884,7 @@ void bfMemDeallocateArrayAligned(bf::IAllocator& self, T* const array, const std
 /*
   MIT License
 
-  Copyright (c) 2022 Shareef Abdoul-Raheem
+  Copyright (c) 2022-2023 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
