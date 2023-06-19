@@ -17,7 +17,7 @@
 #ifndef BF_MEMORY_API_HPP
 #define BF_MEMORY_API_HPP
 
-#include <cstddef>  // size_t
+#include <cstddef>  // size_t, max_align_t
 #include <memory>   // uninitialized_default_construct, uninitialized_value_construct
 #include <new>      // placement new
 #include <utility>  // forward, move
@@ -32,6 +32,8 @@
 
 namespace bf
 {
+  static constexpr std::size_t k_DefaultAlignment = alignof(std::max_align_t);
+
   template<typename T>
   struct is_trivially_relocatable : public std::true_type
   {
@@ -345,8 +347,16 @@ std::size_t bfMemAlignOffset(const void* const ptr, const std::size_t alignment)
  */
 void bfMemCopy(void* const dst, const void* const src, std::size_t num_bytes);
 
+void bfMemSet(void* const dst, const unsigned char value, std::size_t num_bytes);
+
+template<typename T>
+constexpr void bfMemDestruct(T* const ptr)
+{
+  std::destroy_at(ptr);
+}
+
 template<typename Iterator>
-void bfMemDestructRange(const Iterator bgn, const Iterator end)
+constexpr void bfMemDestructRange(const Iterator bgn, const Iterator end)
 {
   using Traits     = std::iterator_traits<Iterator>;
   using value_type = typename Traits::value_type;

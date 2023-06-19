@@ -31,16 +31,16 @@ bool bfMemAssertImpl(const bool expr, const char* const expr_str, const char* co
 }
 #endif
 
-#define bfCast(e, T) ((T)(e))
-
 void* bfAlignUpPointer(const void* const ptr, const size_t required_alignment)
 {
   bfMemAssert(required_alignment > 0 && (required_alignment & (required_alignment - 1)) == 0, "The alignment must be a non-zero power of two.");
 
   const size_t required_alignment_mask = required_alignment - 1;
 
-  return bfCast(bfCast(ptr, uintptr_t) + required_alignment_mask & ~required_alignment_mask, void*);
+  return reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t>(ptr) + required_alignment_mask & ~required_alignment_mask);
 }
+
+#define bfCast(e, T) ((T)(e))
 
 /*
   Good read on the various implementations and performance characteristics:
@@ -78,6 +78,11 @@ std::size_t bfMemAlignOffset(const void* const ptr, const std::size_t alignment)
 void bfMemCopy(void* const dst, const void* const src, std::size_t num_bytes)
 {
   std::memcpy(dst, src, num_bytes);
+}
+
+void bfMemSet(void* const dst, const unsigned char value, std::size_t num_bytes)
+{
+  std::memset(dst, value, num_bytes);
 }
 
 //-------------------------------------------------------------------------------------//
@@ -165,8 +170,6 @@ static AlignmentHeader alignedAllocationOffset(const void* ptr)
 
 bf::AllocationResult bfMemAllocateAligned(bf::IAllocator& self, const std::size_t size, const std::size_t alignment)
 {
-  bfMemAssert(alignment <= std::numeric_limits<AlignmentHeader>::max(), "Alignment too large.");
-
   if (alignment <= self.default_min_alignment)
   {
     return bfMemAllocate(self, size);
@@ -177,6 +180,8 @@ bf::AllocationResult bfMemAllocateAligned(bf::IAllocator& self, const std::size_
   }
   else
   {
+    bfMemAssert(alignment <= std::numeric_limits<AlignmentHeader>::max(), "Alignment too large.");
+
     const std::size_t          allocation_size = alignedAllocationSize(size, alignment);
     const bf::AllocationResult allocation      = bfMemAllocate(self, allocation_size);
 

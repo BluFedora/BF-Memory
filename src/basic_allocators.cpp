@@ -12,7 +12,7 @@
 /******************************************************************************/
 #include "bf/memory/basic_allocators.hpp"
 
-#include <algorithm> // max
+#include <algorithm>  // max
 
 namespace bf
 {
@@ -64,6 +64,13 @@ namespace bf
   void LinearAllocator::clear()
   {
     current = memory_bgn;
+  }
+
+  bool LinearAllocator::canServiceAllocation(const std::size_t allocation_size, const std::size_t allocation_alignment) const
+  {
+    const void* const aligned_ptr = bfAlignUpPointer(current, allocation_alignment);
+
+    return (reinterpret_cast<const byte*>(aligned_ptr) + allocation_size) <= memory_end;
   }
 
   void LinearAllocatorSavePoint::save(LinearAllocator& allocator)

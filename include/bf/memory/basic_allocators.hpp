@@ -28,19 +28,20 @@ namespace bf
    */
   struct LinearAllocator : public IAllocator
   {
-    byte*       memory_bgn;
-    const byte* memory_end;
-    byte*       current;
+    byte* const       memory_bgn;
+    const byte* const memory_end;
+    byte*             current;
 
     LinearAllocator(byte* const memory_block, std::size_t memory_block_size);
 
     void clear(void);
+    bool canServiceAllocation(const std::size_t allocation_size, const std::size_t allocation_alignment = k_DefaultAlignment) const;
   };
 
   /*!
    * @copydoc LinearAllocator
    */
-  template<std::size_t k_BufferSize, std::size_t alignment = alignof(std::max_align_t)>
+  template<std::size_t k_BufferSize, std::size_t alignment = k_DefaultAlignment>
   struct FixedLinearAllocator : public LinearAllocator
   {
     alignas(alignment) byte buffer[k_BufferSize];
@@ -63,19 +64,21 @@ namespace bf
 
   struct LinearAllocatorScope : private LinearAllocatorSavePoint
   {
-   public:
     inline LinearAllocatorScope(LinearAllocator& allocator) :
       LinearAllocatorSavePoint{}
     {
       save(allocator);
     }
 
-    inline ~LinearAllocatorScope() { restore(); }
-
     LinearAllocatorScope(const LinearAllocatorScope& rhs)                = delete;
     LinearAllocatorScope(LinearAllocatorScope&& rhs) noexcept            = delete;
     LinearAllocatorScope& operator=(const LinearAllocatorScope& rhs)     = delete;
     LinearAllocatorScope& operator=(LinearAllocatorScope&& rhs) noexcept = delete;
+
+    inline ~LinearAllocatorScope()
+    {
+      restore();
+    }
   };
 
   //-------------------------------------------------------------------------------------//
@@ -137,7 +140,7 @@ namespace bf
   /*!
    * @copydoc PoolAllocator
    */
-  template<std::size_t kblock_size, std::size_t num_blocks, std::size_t alignment = alignof(std::max_align_t)>
+  template<std::size_t kblock_size, std::size_t num_blocks, std::size_t alignment = k_DefaultAlignment>
   struct FixedPoolAllocator : public PoolAllocator
   {
     static constexpr std::size_t header_alignment  = alignof(PoolAllocatorBlock);
@@ -171,7 +174,7 @@ namespace bf
 
     struct Chunk
     {
-      byte   buffer[BlockSize * k_NumBlocksInChunk];
+      alignas(16) byte buffer[BlockSize * k_NumBlocksInChunk];
       Chunk* next;
     };
 
