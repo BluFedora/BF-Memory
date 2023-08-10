@@ -161,7 +161,7 @@ namespace bf
    */
   enum class MemArrayInit
   {
-    UNINITIALIZE,       //!< Memory is left alone in unitialized state.
+    UNINITIALIZE,       //!< Memory is left alone in uninitialized state.
     DEFAULT_CONSTRUCT,  //!< Will default construct the memory to type `T`, if `T` is trivial then it may be left uninitialized.
     VALUE_CONSTRUCT,    //!< Will default construct the memory to its default value, typically zeroed for trivial types.
   };
@@ -582,7 +582,7 @@ void bfMemDeallocateAligned(bf::IAllocator& self, T* const ptr);
 /*!
  * @brief
  *   Initializes a block of memory using the policy from \p init.
- *   The block of memory should be unitialized.
+ *   The block of memory should be uninitialized.
  *
  * @tparam T
  *   The type of array.
@@ -802,18 +802,18 @@ T* bfMemArrayInit(const bf::AllocationResult mem_block, const std::size_t num_el
 {
   T* const typed_array = static_cast<T*>(mem_block.ptr);
 
-  if (typed_array)
+  if constexpr (init != bf::MemArrayInit::UNINITIALIZE)
   {
-    if constexpr (init == bf::MemArrayInit::UNINITIALIZE)
+    if (typed_array)
     {
-    }
-    else if constexpr (init == bf::MemArrayInit::DEFAULT_CONSTRUCT)
-    {
-      std::uninitialized_default_construct(typed_array, typed_array + num_elements);
-    }
-    else if constexpr (init == bf::MemArrayInit::VALUE_CONSTRUCT)
-    {
-      std::uninitialized_value_construct(typed_array, typed_array + num_elements);
+      if constexpr (init == bf::MemArrayInit::DEFAULT_CONSTRUCT)
+      {
+        std::uninitialized_default_construct(typed_array, typed_array + num_elements);
+      }
+      else if constexpr (init == bf::MemArrayInit::VALUE_CONSTRUCT)
+      {
+        std::uninitialized_value_construct(typed_array, typed_array + num_elements);
+      }
     }
   }
 
@@ -838,9 +838,11 @@ T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements, cons
     T* const typed_array = static_cast<T*>(mem_block.ptr);
 
     std::uninitialized_fill(typed_array, typed_array + num_elements, value);
+
+    return typed_array;
   }
 
-  return bfMemArrayInit<T>(mem_block, num_elements, value);
+  return nullptr;
 }
 
 template<bf::MemArrayDestroy destroy, typename T>
