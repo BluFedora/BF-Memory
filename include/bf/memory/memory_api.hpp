@@ -62,8 +62,15 @@ namespace bf
     void*       ptr;        //!< Pointer to the starting address of the allocated block.
     std::size_t num_bytes;  //!< Number of bytes allocated, could be greater than the amount of memory requested.
 
-    operator bool() const { return ptr != nullptr && num_bytes != 0u; }
-    operator void*() const { return ptr; }
+    AllocationResult() = default;
+    constexpr AllocationResult(void* const ptr, const std::size_t num_bytes) :
+      ptr{ptr},
+      num_bytes{num_bytes}
+    {
+    }
+
+    constexpr operator bool() const { return ptr != nullptr && num_bytes != 0u; }
+    constexpr operator void*() const { return ptr; }
   };
 
   /*!
