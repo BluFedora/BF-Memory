@@ -145,7 +145,7 @@ namespace bf
   {
     static constexpr std::size_t header_alignment  = alignof(PoolAllocatorBlock);
     static constexpr std::size_t actual_alignment  = alignment < header_alignment ? header_alignment : alignment;
-    static constexpr std::size_t actual_block_size = bfAlignUpSize(kblock_size, actual_alignment);
+    static constexpr std::size_t actual_block_size = Memory::AlignSize(kblock_size, actual_alignment);
     static constexpr std::size_t memory_block_size = actual_block_size * num_blocks;
 
     /*!
@@ -281,7 +281,7 @@ namespace bf
 
 }  // namespace bf
 
-#endif /* BF_MEMORY_API_HPP */
+#endif /* LibFoundation_Memory_API_HPP */
 
 /******************************************************************************/
 /*

@@ -8,33 +8,43 @@
 
 cmake_minimum_required(VERSION 3.12)
 
-project(BF_Memory VERSION 1.0.0 DESCRIPTION "Custom allocator interface for various allocation schemes.")
+project(LibFoundation_Memory VERSION 1.0.0 DESCRIPTION "Custom allocator interface for various allocation schemes.")
 
-add_library(BF_Memory STATIC
+add_library(
+  LibFoundation_Memory 
+    STATIC
+      # Headers
+      "include/bf/memory/basic_allocators.hpp"
+      "include/bf/memory/crt_allocator.hpp"
+      "include/bf/memory/memory_api.hpp"
+      "include/bf/memory/scoped_buffer.hpp"
+      "include/bf/memory/stl_allocator.hpp"
 
-    # Headers
-    "include/bf/memory/basic_allocators.hpp"
-    "include/bf/memory/crt_allocator.hpp"
-    "include/bf/memory/memory_api.hpp"
-    "include/bf/memory/scoped_buffer.hpp"
-    "include/bf/memory/stl_allocator.hpp"
+      "include/memory/alignment.hpp"
+      "include/memory/assertion.hpp"
+      "include/memory/basic_types.hpp"
+      "include/memory/fixed_st_allocators.hpp"
+      "include/memory/memory_manager.hpp"
 
-    # Sources
-    "src/basic_allocators.cpp"
-    "src/crt_allocator.cpp"
-    "src/memory_api.cpp"
+      # Sources
+      "src/assertion.cpp"
+      "src/alignment.cpp"
+      "src/fixed_st_allocators.cpp"
+      "src/basic_allocators.cpp"
+      "src/crt_allocator.cpp"
+      "src/memory_api.cpp"
 )
 
 target_include_directories(
-  BF_Memory
+  LibFoundation_Memory
   PUBLIC
     "${PROJECT_SOURCE_DIR}/include"
 )
 
 target_compile_features(
-  BF_Memory
+  LibFoundation_Memory
   PUBLIC
     cxx_std_17
 )
 
-set_property(TARGET BF_Memory PROPERTY FOLDER "BluFedora/Foundation")
+set_property(TARGET LibFoundation_Memory PROPERTY FOLDER "BluFedora/Foundation")

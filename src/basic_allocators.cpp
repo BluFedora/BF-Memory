@@ -68,7 +68,7 @@ namespace bf
 
   bool LinearAllocator::canServiceAllocation(const std::size_t allocation_size, const std::size_t allocation_alignment) const
   {
-    const void* const aligned_ptr = bfAlignUpPointer(current, allocation_alignment);
+    const void* const aligned_ptr = Memory::AlignPointer(current, allocation_alignment);
 
     return (reinterpret_cast<const byte*>(aligned_ptr) + allocation_size) <= memory_end;
   }
