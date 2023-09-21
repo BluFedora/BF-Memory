@@ -27,7 +27,7 @@ namespace Memory
   static constexpr MemoryIndex DefaultMallocAlignment = alignof(std::max_align_t);
 
   static constexpr MemoryIndex DefaultAlignment = DefaultMallocAlignment < DefaultNewAlignment ? DefaultNewAlignment : DefaultMallocAlignment;
-  static constexpr MemoryIndex MaxAlignment     = 256;
+  static constexpr MemoryIndex MaxAlignment     = 4096;  // 256; TODO(SR): Fix me.
 
   // Alignment must be a non-zero power of two in the range [2, MaxAlignment].
   constexpr bool IsValidAlignment(const MemoryIndex alignment) noexcept

@@ -25,10 +25,6 @@
 #include <new>      // placement new
 #include <utility>  // forward, move
 
-#ifndef LibFoundation_Memory_DEBUG_WIPE_MEMORY
-#define LibFoundation_Memory_DEBUG_WIPE_MEMORY 1  //!< Uninitialized memory will be wiped to a known value, disable for shipping build.
-#endif
-
 namespace bf
 {
   static constexpr std::size_t k_DefaultAlignment = alignof(std::max_align_t);
@@ -98,7 +94,6 @@ namespace bf
   struct IAllocator
   {
     const MemAllocFn   alloc;                  //!< @copydoc MemAllocFn
-    const std::size_t  default_min_alignment;  //!< The default alignment from the `alloc` function.
     MemAlignedAllocFn  aligned_alloc;          //!< @copydoc MemAlignedAllocFn
     const MemDeallocFn dealloc;                //!< @copydoc MemDeallocFn
     IAllocator*        parent;                 //!< private: parent allocator for the allocator stack.
@@ -108,9 +103,8 @@ namespace bf
     // Only Subclasses should be able to call the constructor and destructor.
     //-------------------------------------------------------------------------------------//
 
-    IAllocator(MemAllocFn alloc, MemDeallocFn dealloc, std::size_t default_min_alignment, const MemAlignedAllocFn aligned_alloc = nullptr) :
+    IAllocator(MemAllocFn alloc, MemDeallocFn dealloc, const MemAlignedAllocFn aligned_alloc = nullptr) :
       alloc{alloc},
-      default_min_alignment{default_min_alignment},
       aligned_alloc{aligned_alloc},
       dealloc{dealloc},
       parent{nullptr}
@@ -194,23 +188,6 @@ namespace bf
 //-------------------------------------------------------------------------------------//
 // Utilities Interface
 //-------------------------------------------------------------------------------------//
-
-#if LibFoundation_Memory_DEBUG_WIPE_MEMORY
-#define LibFoundation_Memory_DEBUG_UNINITIALIZED 0xCD
-
-inline const AllocationResult& bfMemDebugWipeMemory(const AllocationResult& alloc)
-{
-  if (alloc.ptr)
-  {
-    std::memset(alloc.ptr, LibFoundation_Memory_DEBUG_UNINITIALIZED, alloc.num_bytes);
-  }
-
-  return alloc;
-}
-
-#else
-#define bfMemDebugWipeMemory(alloc) alloc
-#endif
 
 #define bfKilobytes(n) ((n)*1024)
 #define bfMegabytes(n) (bfKilobytes(n) * 1024)
@@ -297,46 +274,6 @@ bf::IAllocator& bfMemAllocator(void);
 void bfMemAllocatorPop(void);
 
 //-------------------------------------------------------------------------------------//
-// Base Allocation Interface: Raw byte allocation, address has no alignment guarantees.
-//-------------------------------------------------------------------------------------//
-
-/*!
- * @brief
- *   Allocates memory from \p self.
- *
- *   The memory may only be freed with bfMemDeallocate.
- *
- * @param self
- *   The allocator to request memory from.
- *
- * @param size
- *   The minimum number of bytes the returned block should contain.
- *
- * @return
- *   A pointer size pair of the usable block of memory, the size may be larger than \p size.
- *   AllocationResult::Null - on failed allocation.
- *
- * @see bfMemDeallocate
- */
-AllocationResult bfMemAllocate(bf::IAllocator& self, const std::size_t size);
-
-/*!
- * @brief
- *   Frees the memory pointed to by \p mem_block.
- *
- *   Must only pass in a block from bfMemAllocate.
- *
- * @param self
- *   The allocator to return memory to.
- *
- * @param mem_block
- *   The block of memory to free. mem_block.size may be smaller than what was returned by bfMemAllocate.
- *
- * @see bfMemAllocate
- */
-void bfMemDeallocate(bf::IAllocator& self, const AllocationResult mem_block);
-
-//-------------------------------------------------------------------------------------//
 // Aligned Allocation API: Takes up extra memory for offset header and alignment.
 //-------------------------------------------------------------------------------------//
 
@@ -360,7 +297,7 @@ void bfMemDeallocate(bf::IAllocator& self, const AllocationResult mem_block);
  *
  * @see bfMemDeallocateAligned
  */
-AllocationResult bfMemAllocateAligned(bf::IAllocator& self, const std::size_t size, const std::size_t alignment);
+AllocationResult bfMemAllocate(bf::IAllocator& self, const std::size_t size, const std::size_t alignment);
 
 /*!
  * @brief
@@ -377,7 +314,7 @@ AllocationResult bfMemAllocateAligned(bf::IAllocator& self, const std::size_t si
  *
  * @see bfMemAllocateAligned
  */
-void bfMemDeallocateAligned(bf::IAllocator& self, const AllocationResult mem_block, const std::size_t alignment);
+void bfMemDeallocate(bf::IAllocator& self, const AllocationResult mem_block, const std::size_t alignment);
 
 //-------------------------------------------------------------------------------------//
 // Single Object API: Aligned versions take up extra memory.
@@ -649,7 +586,7 @@ void bfMemDeallocateArrayAligned(bf::IAllocator& self, T* const array, const std
 template<typename T, typename... Args>
 T* bfMemAllocate(bf::IAllocator& self, Args&&... args)
 {
-  const AllocationResult mem_block = bfMemAllocate(self, sizeof(T));
+  const AllocationResult mem_block = bfMemAllocate(self, sizeof(T), alignof(T));
 
   return mem_block ? new (mem_block.ptr) T(std::forward<Args>(args)...) : nullptr;
 }
@@ -660,7 +597,7 @@ void bfMemDeallocate(bf::IAllocator& self, T* const ptr)
   if (ptr)
   {
     std::destroy_at(ptr);
-    bfMemDeallocate(self, AllocationResult{ptr, sizeof(T)});
+    bfMemDeallocate(self, AllocationResult{ptr, sizeof(T)}, alignof(T));
   }
 }
 
@@ -708,7 +645,7 @@ T* bfMemArrayInit(const AllocationResult mem_block, const std::size_t num_elemen
 template<typename T, bf::MemArrayInit init>
 T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements)
 {
-  const AllocationResult mem_block = bfMemAllocate(self, sizeof(T) * num_elements);
+  const AllocationResult mem_block = bfMemAllocate(self, sizeof(T) * num_elements, alignof(T));
 
   return bfMemArrayInit<T, init>(mem_block, num_elements);
 }
@@ -745,14 +682,14 @@ void bfMemDeallocateArray(bf::IAllocator& self, T* const array, const std::size_
   if (array && num_elements)
   {
     bfMemDestructArray<destroy>(array, num_elements);
-    bfMemDeallocate(self, AllocationResult{array, sizeof(T) * num_elements});
+    bfMemDeallocate(self, AllocationResult{array, sizeof(T) * num_elements}, alignof(T));
   }
 }
 
 template<typename T, bf::MemArrayInit init>
 T* bfMemAllocateArrayAligned(bf::IAllocator& self, const std::size_t num_elements, const std::size_t alignment)
 {
-  const AllocationResult mem_block = bfMemAllocateAligned(self, sizeof(T) * num_elements, alignment);
+  const AllocationResult mem_block = bfMemAllocate(self, sizeof(T) * num_elements, alignment);
 
   return bfMemArrayInit<T, init>(mem_block, num_elements);
 }
@@ -771,7 +708,7 @@ void bfMemDeallocateArrayAligned(bf::IAllocator& self, T* const array, const std
   if (array && num_elements)
   {
     bfMemDestructArray<destroy>(array, num_elements);
-    bfMemDeallocateAligned(self, AllocationResult{array, sizeof(T) * num_elements}, alignment);
+    bfMemDeallocate(self, AllocationResult{array, sizeof(T) * num_elements}, alignment);
   }
 }
 

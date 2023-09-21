@@ -68,28 +68,6 @@ void bfMemAllocatorPop(void)
 }
 
 //-------------------------------------------------------------------------------------//
-// Base Allocation Interface: Raw byte allocation, address has no alignment guarantees.
-//-------------------------------------------------------------------------------------//
-
-AllocationResult bfMemAllocate(bf::IAllocator& self, const std::size_t size)
-{
-  if (size != 0u)
-  {
-    return bfMemDebugWipeMemory(self.alloc(&self, size));
-  }
-
-  return AllocationResult::Null();
-}
-
-void bfMemDeallocate(bf::IAllocator& self, const AllocationResult mem_block)
-{
-  if (mem_block)
-  {
-    self.dealloc(&self, bfMemDebugWipeMemory(mem_block));
-  }
-}
-
-//-------------------------------------------------------------------------------------//
 // Aligned Allocation API: Takes up extra memory for header and alignment.
 //-------------------------------------------------------------------------------------//
 
@@ -104,13 +82,9 @@ static AlignmentHeader alignedAllocationOffset(const void* ptr)
   return static_cast<const std::uint8_t*>(ptr)[-1];
 }
 
-AllocationResult bfMemAllocateAligned(bf::IAllocator& self, const std::size_t size, const std::size_t alignment)
+AllocationResult bfMemAllocate(bf::IAllocator& self, const std::size_t size, const std::size_t alignment)
 {
-  if (alignment <= self.default_min_alignment)
-  {
-    return bfMemAllocate(self, size);
-  }
-  else if (self.aligned_alloc)
+  if (self.aligned_alloc)
   {
     return self.aligned_alloc(&self, size, alignment);
   }
@@ -118,8 +92,8 @@ AllocationResult bfMemAllocateAligned(bf::IAllocator& self, const std::size_t si
   {
     bfMemAssert(alignment <= std::numeric_limits<AlignmentHeader>::max(), "Alignment too large.");
 
-    const std::size_t          allocation_size = alignedAllocationSize(size, alignment);
-    const AllocationResult allocation      = bfMemAllocate(self, allocation_size);
+    const std::size_t      allocation_size = alignedAllocationSize(size, alignment);
+    const AllocationResult allocation      = self.alloc(&self, allocation_size);
 
     if (allocation)
     {
@@ -135,18 +109,11 @@ AllocationResult bfMemAllocateAligned(bf::IAllocator& self, const std::size_t si
   }
 }
 
-void bfMemDeallocateAligned(bf::IAllocator& self, const AllocationResult mem_block, const std::size_t alignment)
+void bfMemDeallocate(bf::IAllocator& self, const AllocationResult mem_block, const std::size_t alignment)
 {
-  if (alignment <= self.default_min_alignment || self.aligned_alloc)
-  {
-    bfMemDeallocate(self, mem_block);
-  }
-  else
-  {
-    const AlignmentHeader offset           = alignedAllocationOffset(mem_block.ptr);
-    const std::size_t     allocation_size  = alignedAllocationSize(mem_block.num_bytes, alignment);
-    void* const           allocation_start = reinterpret_cast<void*>(std::uintptr_t(mem_block.ptr) - offset);
+  const AlignmentHeader offset           = alignedAllocationOffset(mem_block.ptr);
+  const std::size_t     allocation_size  = alignedAllocationSize(mem_block.num_bytes, alignment);
+  void* const           allocation_start = reinterpret_cast<void*>(std::uintptr_t(mem_block.ptr) - offset);
 
-    bfMemDeallocate(self, AllocationResult{allocation_start, allocation_size});
-  }
+  self.dealloc(&self, AllocationResult{allocation_start, allocation_size});
 }

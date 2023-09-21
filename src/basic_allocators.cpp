@@ -54,7 +54,7 @@ namespace bf
   }
 
   LinearAllocator::LinearAllocator(byte* const memory_block, std::size_t memory_block_size) :
-    IAllocator(alloc_wrapper<&linear_alloc, LinearAllocator>, dealloc_wrapper<&linear_dealloc, LinearAllocator>, alignof(byte)),
+    IAllocator(alloc_wrapper<&linear_alloc, LinearAllocator>, dealloc_wrapper<&linear_dealloc, LinearAllocator>),
     memory_bgn{memory_block},
     memory_end{memory_block + memory_block_size},
     current{memory_block}
@@ -121,7 +121,7 @@ namespace bf
   }
 
   StackAllocator::StackAllocator(byte* const memory_block, std::size_t memory_block_size) :
-    IAllocator(alloc_wrapper<&stack_alloc, StackAllocator>, dealloc_wrapper<&stack_dealloc, StackAllocator>, alignof(byte)),
+    IAllocator(alloc_wrapper<&stack_alloc, StackAllocator>, dealloc_wrapper<&stack_dealloc, StackAllocator>),
     stack_ptr{memory_block},
     mem_block_end{memory_block + memory_block_size}
   {
@@ -157,7 +157,7 @@ namespace bf
   }
 
   PoolAllocator::PoolAllocator(byte* const memory_block, std::size_t memory_block_size, std::size_t pool_block_size) :
-    IAllocator(alloc_wrapper<&pool_alloc, PoolAllocator>, dealloc_wrapper<&pool_dealloc, PoolAllocator>, alignof(byte)),
+    IAllocator(alloc_wrapper<&pool_alloc, PoolAllocator>, dealloc_wrapper<&pool_dealloc, PoolAllocator>),
     memory_bgn{memory_block},
     pool_head{nullptr},
     block_size{std::max(pool_block_size, sizeof(PoolAllocatorBlock))},
@@ -346,7 +346,7 @@ namespace bf
   }
 
   FreeListAllocator::FreeListAllocator(byte* const memory_block, std::size_t memory_block_size) :
-    IAllocator(alloc_wrapper<&freelist_alloc, FreeListAllocator>, dealloc_wrapper<&freelist_dealloc, FreeListAllocator>, alignof(byte)),
+    IAllocator(alloc_wrapper<&freelist_alloc, FreeListAllocator>, dealloc_wrapper<&freelist_dealloc, FreeListAllocator>),
     freelist{reinterpret_cast<FreeListNode*>(memory_block)}
   {
     freelist->size = memory_block_size - sizeof(AllocationHeader);

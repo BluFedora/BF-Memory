@@ -223,8 +223,7 @@ namespace bf
          PoolAllocatorBlock* const block = static_cast<PoolAllocatorBlock*>(mem_block.ptr);
 
          block->next = std::exchange(self->pool_head, block);
-       },
-       allocator.default_min_alignment),
+       }),
       chunks{nullptr},
       pool_head{nullptr},
       chunk_allocator{allocator}
