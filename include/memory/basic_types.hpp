@@ -65,6 +65,70 @@ struct AllocationSourceInfo
   AllocationSourceInfo {}
 #endif
 
+/*!
+ * @brief
+ *   Function used to allocate memory.
+ *
+ * @param allocator_state
+ *   The allocator to request a memory block from.
+ *
+ * @param size
+ *   The number of bytes requested to allocate.
+ *
+ * @param alignment
+ *   Required alignment of the returned block.
+ *
+ * @return
+ *    On Success: An AllocationResult with a pointer to the block of memory and number of bytes
+ *                available (could be greater than \p size).
+ *    On Failure: An AllocationResult with a nullptr and num_bytes == 0u;
+ */
+using AllocateFn = AllocationResult (*)(
+ void* const                 allocator_state,
+ const MemoryIndex           size,
+ const MemoryIndex           alignment,
+ const AllocationSourceInfo& source_info);
+
+/*!
+ * @brief
+ *   Function used to free memory allocated from `MemAllocFn`.
+ *
+ * @param allocator_state
+ *   The allocator to return the memory block to.
+ *
+ * @param ptr
+ *   Allocated region to free.
+ *
+ * @param size
+ *   Must be some number between the requested number of bytes and the number of returned bytes.
+ *
+ * @param alignment
+ *   Must be the same alignment passed into the allocation function.
+ */
+using DeallocateFn = void (*)(void* const allocator_state, void* const ptr, const MemoryIndex size, const MemoryIndex alignment);
+
+struct Allocator
+{
+  AllocateFn   allocate;
+  DeallocateFn deallocate;
+  void*        state;
+
+  Allocator()                                = default;
+  Allocator(const Allocator& rhs)            = default;
+  Allocator(Allocator&& rhs)                 = default;
+  Allocator& operator=(const Allocator& rhs) = default;
+  Allocator& operator=(Allocator&& rhs)      = default;
+
+  Allocator(void* const        state,
+            const AllocateFn   allocate_fn,
+            const DeallocateFn deallocate_fn) :
+    allocate{allocate_fn},
+    deallocate{deallocate_fn},
+    state{state}
+  {
+  }
+};
+
 #endif  // LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP
 
 /******************************************************************************/

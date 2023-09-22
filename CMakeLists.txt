@@ -33,7 +33,7 @@ add_library(
       "src/basic_allocators.cpp"
       "src/crt_allocator.cpp"
       "src/memory_api.cpp"
-)
+ "src/default_heap.cpp")
 
 target_include_directories(
   LibFoundation_Memory

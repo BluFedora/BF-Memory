@@ -129,8 +129,6 @@ namespace Memory
 
       const MemoryIndex total_size = guard_size + guard_size + size + guard_size;
 
-      auto s = static_cast<AllocationState*>(this);
-
       AllocationResult result = static_cast<AllocationState*>(this)->Allocate(total_size, alignment);
 
       if (result)
@@ -201,7 +199,21 @@ namespace Memory
       }
     }
 
-   private:
+    operator Allocator()
+    {
+      return Allocator{
+       this,
+       [](void* const                 allocator_state,
+          const MemoryIndex           size,
+          const MemoryIndex           alignment,
+          const AllocationSourceInfo& source_info) -> AllocationResult {
+           return static_cast<MemoryManager*>(allocator_state)->Allocate(size, alignment, source_info);
+       },
+       [](void* const allocator_state, void* const ptr, const MemoryIndex size, const MemoryIndex alignment) -> void {
+         return static_cast<MemoryManager*>(allocator_state)->Deallocate(ptr, size, alignment);
+       }
+      };
+    }
   };
 
 }  // namespace Memory
