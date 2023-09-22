@@ -21,50 +21,11 @@ void bfMemSet(void* const dst, const unsigned char value, std::size_t num_bytes)
   std::memset(dst, value, num_bytes);
 }
 
-//-------------------------------------------------------------------------------------//
-// Allocator Stack Interface: The stack is thread local.
-//-------------------------------------------------------------------------------------//
-
-bf::AllocatorScope::AllocatorScope(bf::IAllocator& new_allocator)
-{
-  bfMemAllocatorPush(new_allocator);
-}
-
-bf::AllocatorScope::~AllocatorScope()
-{
-  bfMemAllocatorPop();
-}
-
-namespace
-{
-  static bf::IAllocator*& CurrentAllocator()
-  {
-    static bf::CRTAllocator             s_DefaultAllocator = {};
-    static thread_local bf::IAllocator* s_CurrentAllocator = &s_DefaultAllocator;
-
-    return s_CurrentAllocator;
-  }
-}  // namespace
-
-void bfMemAllocatorPush(bf::IAllocator& new_allocator)
-{
-  bfMemAssert(!new_allocator.parent, "Allocator cannot be pushed onto the stack multiple times.");
-
-  new_allocator.parent = std::exchange(CurrentAllocator(), &new_allocator);
-}
+static bf::CRTAllocator s_DefaultAllocator = {};
 
 bf::IAllocator& bfMemAllocator(void)
 {
-  return *CurrentAllocator();
-}
-
-void bfMemAllocatorPop(void)
-{
-  bf::IAllocator*& current_allocator = CurrentAllocator();
-
-  current_allocator = std::exchange(current_allocator->parent, nullptr);
-
-  bfMemAssert(current_allocator, "Too many pops for each push.");
+  return s_DefaultAllocator;
 }
 
 //-------------------------------------------------------------------------------------//
@@ -84,29 +45,22 @@ static AlignmentHeader alignedAllocationOffset(const void* ptr)
 
 AllocationResult bfMemAllocate(bf::IAllocator& self, const std::size_t size, const std::size_t alignment)
 {
-  if (self.aligned_alloc)
+  bfMemAssert(alignment <= std::numeric_limits<AlignmentHeader>::max(), "Alignment too large.");
+
+  const std::size_t      allocation_size = alignedAllocationSize(size, alignment);
+  const AllocationResult allocation      = self.alloc(&self, allocation_size);
+
+  if (allocation)
   {
-    return self.aligned_alloc(&self, size, alignment);
+    const std::uint8_t* const header_end  = static_cast<std::uint8_t*>(allocation.ptr) + sizeof(AlignmentHeader);
+    std::uint8_t* const       data_start  = static_cast<std::uint8_t*>(Memory::AlignPointer(header_end, alignment));
+    const AlignmentHeader     data_offset = AlignmentHeader(std::uintptr_t(data_start) - std::uintptr_t(allocation.ptr));
+    data_start[-1]                        = data_offset;
+
+    return AllocationResult{data_start, allocation.num_bytes - data_offset};
   }
-  else
-  {
-    bfMemAssert(alignment <= std::numeric_limits<AlignmentHeader>::max(), "Alignment too large.");
 
-    const std::size_t      allocation_size = alignedAllocationSize(size, alignment);
-    const AllocationResult allocation      = self.alloc(&self, allocation_size);
-
-    if (allocation)
-    {
-      const std::uint8_t* const header_end  = static_cast<std::uint8_t*>(allocation.ptr) + sizeof(AlignmentHeader);
-      std::uint8_t* const       data_start  = static_cast<std::uint8_t*>(Memory::AlignPointer(header_end, alignment));
-      const AlignmentHeader     data_offset = AlignmentHeader(std::uintptr_t(data_start) - std::uintptr_t(allocation.ptr));
-      data_start[-1]                        = data_offset;
-
-      return AllocationResult{data_start, allocation.num_bytes - data_offset};
-    }
-
-    return AllocationResult::Null();
-  }
+  return AllocationResult::Null();
 }
 
 void bfMemDeallocate(bf::IAllocator& self, const AllocationResult mem_block, const std::size_t alignment)
