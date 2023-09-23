@@ -23,7 +23,7 @@
 
 namespace Memory
 {
-  Allocator DefaultHeap() noexcept;
+  Allocator& DefaultHeap() noexcept;
 }
 
 #endif  // LIB_FOUNDATION_MEMORY_DEFAULT_HEAP_HPP

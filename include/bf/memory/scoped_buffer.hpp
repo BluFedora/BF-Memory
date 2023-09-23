@@ -30,7 +30,7 @@ namespace bf
     T*          buffer;
     std::size_t num_elements;
 
-    ScopedBuffer(IAllocator& memory = bfMemAllocator(), std::size_t in_num_elements = 0u) :
+    ScopedBuffer(IAllocator& memory = Memory::DefaultHeap(), std::size_t in_num_elements = 0u) :
       memory{memory},
       buffer{nullptr},
       num_elements{0u}
@@ -79,7 +79,7 @@ namespace bf
           const T* const    new_buffer_end   = new_buffer + new_size;
           const std::size_t num_new_elements = (new_buffer_end - new_buffer_move_end);
 
-          bfMemArrayInit<T, new_element_init>({new_buffer_move_end, num_new_elements * sizeof(T)}, num_new_elements);
+          bfMemArrayConstruct<T, new_element_init>({new_buffer_move_end, num_new_elements * sizeof(T)}, num_new_elements);
 
           num_elements = new_size;
           buffer       = new_buffer;

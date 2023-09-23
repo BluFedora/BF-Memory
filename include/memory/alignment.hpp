@@ -27,12 +27,11 @@ namespace Memory
   static constexpr MemoryIndex DefaultMallocAlignment = alignof(std::max_align_t);
 
   static constexpr MemoryIndex DefaultAlignment = DefaultMallocAlignment < DefaultNewAlignment ? DefaultNewAlignment : DefaultMallocAlignment;
-  static constexpr MemoryIndex MaxAlignment     = 4096;  // 256; TODO(SR): Fix me.
 
-  // Alignment must be a non-zero power of two in the range [2, MaxAlignment].
+  // Alignment must be a non-zero power of two.
   constexpr bool IsValidAlignment(const MemoryIndex alignment) noexcept
   {
-    return alignment > 0 && alignment <= MaxAlignment && (alignment & (alignment - 1)) == 0;
+    return alignment > 0 && (alignment & (alignment - 1)) == 0;
   }
 
   template<MemoryIndex Alignment>
@@ -43,7 +42,7 @@ namespace Memory
 
   memory_constexpr_no_assert MemoryIndex IsSizeAligned(const MemoryIndex size, const MemoryIndex alignment) noexcept
   {
-    bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two less than %zu.", alignment, MaxAlignment);
+    bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
 
     return (size & (alignment - 1u)) == 0;
   }
@@ -71,7 +70,7 @@ namespace Memory
    */
   memory_constexpr_no_assert MemoryIndex AlignSize(const MemoryIndex size, const MemoryIndex alignment) noexcept
   {
-    bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two less than %zu.", alignment, MaxAlignment);
+    bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
 
     const MemoryIndex required_alignment_mask = alignment - 1;
 
@@ -147,7 +146,6 @@ namespace Memory
    *   otherwise NULL is returned.
    */
   void* StandardAlign(const size_t alignment, const size_t size, void** ptr, size_t* space) noexcept;
-
 }  // namespace Memory
 
 #endif  // LIB_FOUNDATION_MEMORY_ALIGHNMENT_HPP

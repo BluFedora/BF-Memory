@@ -44,9 +44,10 @@ using DefaultCRTHeap = BaseDefaultCRTHeap<Memory::AllocationMarkPolicy::MARK, Me
 using DefaultCRTHeap = BaseDefaultCRTHeap<Memory::AllocationMarkPolicy::UNMARKED, Memory::BoundCheckingPolicy::UNCHECKED>;
 #endif
 
-static DefaultCRTHeap s_DefaultHeap = {};
+static DefaultCRTHeap s_DefaultHeapImpl = {};
+static Allocator      s_DefaultHeap     = s_DefaultHeapImpl;
 
-Allocator Memory::DefaultHeap() noexcept
+Allocator& Memory::DefaultHeap() noexcept
 {
   return s_DefaultHeap;
 }

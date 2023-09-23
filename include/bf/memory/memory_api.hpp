@@ -39,78 +39,12 @@ namespace bf
 
   /*!
    * @brief
-   *   Function used to allocate memory.
-   *
-   * @param self
-   *   The allocator to request a memory block from.
-   *
-   * @param size
-   *   The number of bytes requested to allocate.
-   *
-   * @return
-   *    On Success: An AllocationResult with a pointer to the block of memory and number of bytes
-   *                available (could be greater than \p size).
-   *    On Failure: An AllocationResult with a nullptr and num_bytes == 0u;
-   */
-  using MemAllocFn = AllocationResult (*)(struct IAllocator* const self, const std::size_t size);
-  // using MemAllocFn = AllocationResult (*)(void const state, const std::size_t size, const std::size_t alignment, const AllocationSourceInfo& source_info);
-
-  /*!
-   * @brief
-   *   Function used to free memory allocated from `MemAllocFn`.
-   *
-   * @param self
-   *   The allocator to request a memory block from.
-   *
-   * @param mem_block
-   *   Allocated region to free, the AllocationResult::num_bytes must be some number
-   *   between the requested number of bytes to the number of returned bytes.
-   */
-  using MemDeallocFn = void (*)(struct IAllocator* const self, const AllocationResult mem_block);
-
-  /*!
-   * @brief
-   *   Interface for a memory manager.
-   */
-  struct IAllocator
-  {
-    const MemAllocFn   alloc;                  //!< @copydoc MemAllocFn
-    const MemDeallocFn dealloc;                //!< @copydoc MemDeallocFn
-    IAllocator*        parent;                 //!< private: parent allocator for the allocator stack.
-
-   protected:
-    //-------------------------------------------------------------------------------------//
-    // Only Subclasses should be able to call the constructor and destructor.
-    //-------------------------------------------------------------------------------------//
-
-    IAllocator(MemAllocFn alloc, MemDeallocFn dealloc) :
-      alloc{alloc},
-      dealloc{dealloc},
-      parent{nullptr}
-    {
-    }
-
-    ~IAllocator() = default;
-
-   public:
-    //-------------------------------------------------------------------------------------//
-    // Disallow Copies and Moves
-    //-------------------------------------------------------------------------------------//
-
-    IAllocator(const IAllocator& rhs)            = delete;
-    IAllocator(IAllocator&& rhs)                 = delete;
-    IAllocator& operator=(const IAllocator& rhs) = delete;
-    IAllocator& operator=(IAllocator&& rhs)      = delete;
-  };
-
-  /*!
-   * @brief
    *   Describes the way memory should be initialized.
    */
   enum class MemArrayInit
   {
     UNINITIALIZE,       //!< Memory is left alone in uninitialized state.
-    DEFAULT_CONSTRUCT,  //!< Will default construct the memory to type `T`, if `T` is trivial then it may be left uninitialized.
+    DEFAULT_CONSTRUCT,  //!< Will default construct the memory to type `T`, if `T` is trivial then same as UNINITIALIZE.
     VALUE_CONSTRUCT,    //!< Will default construct the memory to its default value, typically zeroed for trivial types.
   };
 
@@ -123,15 +57,19 @@ namespace bf
     NONE,      //!< Memory is left alone.
     DESTRUCT,  //!< Will destruct the memory to type `T`.
   };
+
+  using IAllocator = Allocator;
 }  // namespace bf
+
+struct Allocator;
+namespace bf
+{
+  using IAllocator = Allocator;
+}
 
 //-------------------------------------------------------------------------------------//
 // Utilities Interface
 //-------------------------------------------------------------------------------------//
-
-#define bfKilobytes(n) ((n)*1024)
-#define bfMegabytes(n) (bfKilobytes(n) * 1024)
-#define bfGigabytes(n) (bfMegabytes(n) * 1024)
 
 /*!
  * @brief
@@ -186,26 +124,12 @@ DstIterator bfMemUninitializedMoveRev(SrcIterator src_bgn, SrcIterator src_end, 
 }
 
 //-------------------------------------------------------------------------------------//
-// Allocator Stack Interface: The stack is thread local.
+// Base Allocation API: The functions that all other allocation functions are built on.
 //-------------------------------------------------------------------------------------//
 
 /*!
  * @brief
- *   Returns the current global allocator.
- *
- * @return
- *   The current global allocator.
- */
-bf::IAllocator& bfMemAllocator(void);
-
-//-------------------------------------------------------------------------------------//
-// Aligned Allocation API: Takes up extra memory for offset header and alignment.
-//-------------------------------------------------------------------------------------//
-
-/*!
- * @brief
- *   Allocates memory from \p self, returns a block of memory with a minimum size of \p size
- *   and an alignment of \p alignment.
+ *   Allocates memory from \p self, returns a block of memory with a minimum size of \p size and an alignment of \p alignment.
  *
  * @param self
  *   The allocator to request memory from.
@@ -216,13 +140,27 @@ bf::IAllocator& bfMemAllocator(void);
  * @param alignment
  *   The desired minimum alignment of the beginning of the block of memory.
  *
+ * @param source_info
+ *   Optional information on where the allocation came from.
+ *
  * @return
  *    A pointer size pair of the usable block of memory, the size may be larger than \p size.
  *    AllocationResult::Null - on failed allocation.
  *
- * @see bfMemDeallocateAligned
+ * @see bfMemDeallocate
  */
-AllocationResult bfMemAllocate(bf::IAllocator& self, const std::size_t size, const std::size_t alignment);
+inline AllocationResult(bfMemAllocate)(const Allocator allocator, const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info)
+{
+  return allocator.allocate(allocator.state, size, alignment, source_info);
+}
+
+template<typename AllocatorConcept>
+inline AllocationResult(bfMemAllocate)(AllocatorConcept& allocator, const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info)
+{
+  return allocator.Allocate(size, alignment);
+}
+
+#define bfMemAllocate(allocator, size, alignment) (bfMemAllocate)((allocator), (size), (alignment), MemoryMakeAllocationSourceInfo())
 
 /*!
  * @brief
@@ -239,7 +177,28 @@ AllocationResult bfMemAllocate(bf::IAllocator& self, const std::size_t size, con
  *
  * @see bfMemAllocateAligned
  */
-void bfMemDeallocate(bf::IAllocator& self, const AllocationResult mem_block, const std::size_t alignment);
+// TODO(SR): Dont take in AllocationResult.
+inline void bfMemDeallocate(const Allocator allocator, const AllocationResult mem_block, const std::size_t alignment)
+{
+  return allocator.deallocate(allocator.state, mem_block.ptr, mem_block.num_bytes, alignment);
+}
+
+template<typename AllocatorConcept>
+inline void bfMemDeallocate(AllocatorConcept&& allocator, const AllocationResult mem_block, const std::size_t alignment)
+{
+  return allocator.Deallocate(mem_block.ptr, mem_block.num_bytes, alignment);
+}
+
+inline void bfMemDeallocate(const Allocator allocator, void* const ptr, const MemoryIndex size, const std::size_t alignment)
+{
+  return allocator.deallocate(allocator.state, ptr, size, alignment);
+}
+
+template<typename AllocatorConcept>
+inline void bfMemDeallocate(AllocatorConcept&& allocator, void* const ptr, const MemoryIndex size, const MemoryIndex alignment)
+{
+  return allocator.Deallocate(ptr, size, alignment);
+}
 
 //-------------------------------------------------------------------------------------//
 // Single Object API: Aligned versions take up extra memory.
@@ -265,8 +224,8 @@ void bfMemDeallocate(bf::IAllocator& self, const AllocationResult mem_block, con
  *   On Success: Returns a new object T.
  *   On Failure: nullptr.
  */
-template<typename T, typename... Args>
-T* bfMemAllocate(bf::IAllocator& self, Args&&... args);
+template<typename T, typename AllocatorConcept, typename... Args>
+T* bfMemAllocateObject(AllocatorConcept&& allocator, Args&&... args);
 
 /*!
  * @brief
@@ -280,50 +239,11 @@ T* bfMemAllocate(bf::IAllocator& self, Args&&... args);
  *
  * @param ptr
  */
-template<typename T>
-void bfMemDeallocate(bf::IAllocator& self, T* const ptr);
-
-/*!
- * @brief
- *   Aligned variant of bfMemAllocate, will be aligned to the value of alignof(T).
- *
- * @tparam T
- *   The type of object.
- *
- * @tparam ...Args
- *   The constructor arguments types to pass to T.
- *
- * @param self
- *   The allocator to request memory from.
- *
- * @param ...args
- *    The constructor arguments to pass to T.
- *
- * @return
- *   On Success: Returns a new object T.
- *   On Failure: nullptr.
- */
-template<typename T, typename... Args>
-T* bfMemAllocateAligned(bf::IAllocator& self, Args&&... args);
-
-/*!
- * @brief
- *   Aligned variant of bfMemDeallocate.
- *
- * @tparam T
- *   The type of object.
- *
- * @param self
- *   The allocator to return memory to.
- *
- * @param ptr
- *   The pointer allocated with bfMemAllocateAligned.
- */
-template<typename T>
-void bfMemDeallocateAligned(bf::IAllocator& self, T* const ptr);
+template<typename T, typename AllocatorConcept>
+void bfMemDeallocateObject(AllocatorConcept&& allocator, T* const ptr);
 
 //-------------------------------------------------------------------------------------//
-// Array API: Aligned versions take up extra memory.
+// Array API:
 //-------------------------------------------------------------------------------------//
 
 /*!
@@ -347,7 +267,10 @@ void bfMemDeallocateAligned(bf::IAllocator& self, T* const ptr);
  *   The type casted block of memory into it's correct array type.
  */
 template<typename T, bf::MemArrayInit init>
-T* bfMemArrayInit(const AllocationResult mem_block, const std::size_t num_elements);
+T* bfMemArrayConstruct(const AllocationResult mem_block, const std::size_t num_elements);
+
+template<bf::MemArrayDestroy destroy, typename T>
+void bfMemDestructArray(T* const array, const std::size_t num_elements);
 
 /*!
  * @brief
@@ -371,8 +294,13 @@ T* bfMemArrayInit(const AllocationResult mem_block, const std::size_t num_elemen
  *
  * @see bf::MemArrayInit
  */
-template<typename T, bf::MemArrayInit init = bf::MemArrayInit::UNINITIALIZE>
-T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements, const std::size_t alignment = alignof(T));
+template<typename T, bf::MemArrayInit init = bf::MemArrayInit::UNINITIALIZE, typename AllocatorConcept>
+T* bfMemAllocateArray(AllocatorConcept&& allocator, const std::size_t num_elements, const std::size_t alignment = alignof(T));
+
+// #define bfMemAllocateArrayX(allocator, T, init, num_elements)          (bfMemAllocateArray<T, init>)((allocator), (num_elements), MemoryMakeAllocationSourceInfo())
+// #define bfMemAllocateArrayTrivial(allocator, T, num_elements)          bfMemAllocateArrayX((allocator), T, bf::MemArrayInit::UNINITIALIZE, (num_elements))
+// #define bfMemAllocateArrayDefaultConstruct(allocator, T, num_elements) bfMemAllocateArrayX((allocator), T, bf::MemArrayInit::UNINITIALIZE, (num_elements))
+// #define bfMemAllocateArrayValueConstruct(allocator, T, num_elements)   bfMemAllocateArrayX((allocator), T, bf::MemArrayInit::UNINITIALIZE, (num_elements))
 
 /*!
  * @brief
@@ -394,50 +322,34 @@ T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements, cons
  * @see bfMemAllocateArray
  */
 template<bf::MemArrayDestroy destroy = bf::MemArrayDestroy::NONE, typename T>
-void bfMemDeallocateArray(bf::IAllocator& self, T* const array, const std::size_t num_elements, const std::size_t alignment = alignof(T));
+void bfMemDeallocateArray(const Allocator allocator, T* const array, const std::size_t num_elements, const std::size_t alignment = alignof(T));
 
 //-------------------------------------------------------------------------------------//
 // Templated Function Implementations
 //-------------------------------------------------------------------------------------//
 
-template<typename T, typename... Args>
-T* bfMemAllocate(bf::IAllocator& self, Args&&... args)
+template<typename T, bf::MemArrayInit init, typename AllocatorConcept>
+T* bfMemAllocateArray(AllocatorConcept&& allocator, const std::size_t num_elements, const std::size_t alignment)
 {
-  const AllocationResult mem_block = bfMemAllocate(self, sizeof(T), alignof(T));
+  const AllocationResult mem_block = bfMemAllocate(allocator, sizeof(T) * num_elements, alignment);
 
-  return mem_block ? new (mem_block.ptr) T(std::forward<Args>(args)...) : nullptr;
+  return bfMemArrayConstruct<T, init>(mem_block, num_elements);
 }
 
-template<typename T>
-void bfMemDeallocate(bf::IAllocator& self, T* const ptr)
+template<bf::MemArrayDestroy destroy, typename T>
+void bfMemDeallocateArray(const Allocator allocator, T* const array, const std::size_t num_elements, const std::size_t alignment)
 {
-  if (ptr)
+  if (array && num_elements)
   {
-    std::destroy_at(ptr);
-    bfMemDeallocate(self, AllocationResult{ptr, sizeof(T)}, alignof(T));
+    bfMemDestructArray<destroy>(array, num_elements);
+    bfMemDeallocate(allocator, AllocationResult{array, sizeof(T) * num_elements}, alignment);
   }
 }
 
-template<typename T, typename... Args>
-T* bfMemAllocateAligned(bf::IAllocator& self, Args&&... args)
-{
-  const AllocationResult mem_block = bfMemAllocateAligned(self, sizeof(T), alignof(T));
-
-  return mem_block ? new (mem_block.ptr) T(std::forward<Args>(args)...) : nullptr;
-}
-
-template<typename T>
-void bfMemDeallocateAligned(bf::IAllocator& self, T* const ptr)
-{
-  if (ptr)
-  {
-    std::destroy_at(ptr);
-    bfMemDeallocateAligned(self, AllocationResult{ptr, sizeof(T)}, alignof(T));
-  }
-}
+//
 
 template<typename T, bf::MemArrayInit init>
-T* bfMemArrayInit(const AllocationResult mem_block, const std::size_t num_elements)
+T* bfMemArrayConstruct(const AllocationResult mem_block, const std::size_t num_elements)
 {
   T* const typed_array = static_cast<T*>(mem_block.ptr);
 
@@ -459,30 +371,32 @@ T* bfMemArrayInit(const AllocationResult mem_block, const std::size_t num_elemen
   return typed_array;
 }
 
-template<typename T, bf::MemArrayInit init>
-T* bfMemAllocateArray(bf::IAllocator& self, const std::size_t num_elements, const std::size_t alignment)
-{
-  const AllocationResult mem_block = bfMemAllocate(self, sizeof(T) * num_elements, alignment);
-
-  return bfMemArrayInit<T, init>(mem_block, num_elements);
-}
-
 template<bf::MemArrayDestroy destroy, typename T>
 void bfMemDestructArray(T* const array, const std::size_t num_elements)
 {
   if constexpr (destroy == bf::MemArrayDestroy::DESTRUCT)
   {
-    std::destroy_n(array, num_elements);
+    bfMemDestructRange(array, array + num_elements);
   }
 }
 
-template<bf::MemArrayDestroy destroy, typename T>
-void bfMemDeallocateArray(bf::IAllocator& self, T* const array, const std::size_t num_elements, const std::size_t alignment)
+//
+
+template<typename T, typename AllocatorConcept, typename... Args>
+T* bfMemAllocateObject(AllocatorConcept&& allocator, Args&&... args)
 {
-  if (array && num_elements)
+  const AllocationResult mem_block = bfMemAllocate(allocator, sizeof(T), alignof(T));
+
+  return mem_block ? new (mem_block.ptr) T(std::forward<Args>(args)...) : nullptr;
+}
+
+template<typename T, typename AllocatorConcept>
+void bfMemDeallocateObject(AllocatorConcept&& allocator, T* const ptr)
+{
+  if (ptr)
   {
-    bfMemDestructArray<destroy>(array, num_elements);
-    bfMemDeallocate(self, AllocationResult{array, sizeof(T) * num_elements}, alignment);
+    std::destroy_at(ptr);
+    bfMemDeallocate(allocator, AllocationResult{ptr, sizeof(T)}, alignof(T));
   }
 }
 

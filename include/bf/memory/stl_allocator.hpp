@@ -17,7 +17,9 @@
 #ifndef BF_STL_ALLOCATOR_HPP
 #define BF_STL_ALLOCATOR_HPP
 
-#include "memory_api.hpp" /* IAllocator, bfMemAllocator */
+#include "memory_api.hpp" /* IAllocator, Memory::DefaultHeap */
+
+#include "memory/default_heap.hpp" // Memory::DefaultHeap
 
 namespace bf
 {
@@ -126,7 +128,7 @@ namespace bf
     IAllocator &m_MemoryBackend;
 
    public:
-    StlAllocator(IAllocator &backend = bfMemAllocator()) noexcept :
+    StlAllocator(IAllocator &backend = Memory::DefaultHeap()) noexcept :
       m_MemoryBackend{backend}
     {
     }

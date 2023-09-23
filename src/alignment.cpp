@@ -14,14 +14,14 @@
 
 bool Memory::IsPointerAligned(const void* const ptr, const MemoryIndex alignment) noexcept
 {
-  bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two less than %zu.", alignment, MaxAlignment);
+  bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
 
   return (reinterpret_cast<std::uintptr_t>(ptr) & (alignment - 1u)) == 0u;
 }
 
 void* Memory::AlignPointer(const void* const ptr, const MemoryIndex alignment) noexcept
 {
-  bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two less than %zu.", alignment, MaxAlignment);
+  bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
 
   const MemoryIndex required_alignment_mask = alignment - 1;
 

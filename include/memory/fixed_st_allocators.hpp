@@ -11,6 +11,7 @@
 #ifndef LIB_FOUNDATION_MEMORY_FIXED_ST_ALLOCATORS_HPP
 #define LIB_FOUNDATION_MEMORY_FIXED_ST_ALLOCATORS_HPP
 
+#include "alignment.hpp"    // DefaultAlignment
 #include "basic_types.hpp"  // byte, AllocationResult
 
 namespace Memory
@@ -24,20 +25,203 @@ namespace Memory
    *   This allocator is very good for temporary scoped memory allocations.
    *   There is no individual deallocation but a whole clear operation.
    */
-  struct LinearAllocatorState
+  class LinearAllocator
   {
+    friend class LinearAllocatorSavePoint;
+
    private:
     byte* const       m_MemoryBgn;
     const byte* const m_MemoryEnd;
     byte*             m_Current;
 
    public:
-    LinearAllocatorState(byte* const memory_block, const MemoryIndex memory_block_size);
+    LinearAllocator(byte* const memory_block, const MemoryIndex memory_block_size) noexcept;
 
-    void             Clear() { m_Current = m_MemoryBgn; }
-    bool             CanServiceAllocation(const MemoryIndex size, const MemoryIndex alignment) const;
-    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment);
-    void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment);
+    void             Clear() noexcept { m_Current = m_MemoryBgn; }
+    bool             CanServiceAllocation(const MemoryIndex size, const MemoryIndex alignment) const noexcept;
+    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept;
+    void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
+
+    operator Allocator() { return Allocator::BasicAllocatorConvert(*this); }
+  };
+
+  /*!
+   * @copydoc LinearAllocator
+   */
+  template<MemoryIndex k_BufferSize, MemoryIndex alignment = DefaultAlignment>
+  class FixedLinearAllocator : public LinearAllocator
+  {
+   private:
+    alignas(alignment) byte m_Buffer[k_BufferSize];
+
+   public:
+    FixedLinearAllocator() noexcept :
+      LinearAllocator(m_Buffer, sizeof(m_Buffer)),
+      m_Buffer{}
+    {
+    }
+  };
+
+  class LinearAllocatorSavePoint
+  {
+   private:
+    LinearAllocator* m_Allocator;     //!< The allocator to restore to.
+    byte*            m_RestorePoint;  //!< The point in memory to go back to.
+
+   public:
+    void Save(LinearAllocator& allocator) noexcept;
+    void Restore() noexcept;
+  };
+
+  struct LinearAllocatorScope : private LinearAllocatorSavePoint
+  {
+    LinearAllocatorScope(LinearAllocator& allocator) noexcept :
+      LinearAllocatorSavePoint{}
+    {
+      Save(allocator);
+    }
+
+    LinearAllocatorScope(const LinearAllocatorScope& rhs) noexcept            = delete;
+    LinearAllocatorScope(LinearAllocatorScope&& rhs) noexcept                 = delete;
+    LinearAllocatorScope& operator=(const LinearAllocatorScope& rhs) noexcept = delete;
+    LinearAllocatorScope& operator=(LinearAllocatorScope&& rhs) noexcept      = delete;
+
+    ~LinearAllocatorScope() noexcept { Restore(); }
+  };
+
+  //-------------------------------------------------------------------------------------//
+  // Stack Allocator
+  //-------------------------------------------------------------------------------------//
+
+  /*!
+   * @brief
+   *   This allocator is a designed for allocations where you can guarantee
+   *   deallocation is in a LIFO (Last in First Out) order in return you get
+   *   some speed.
+   */
+  class StackAllocator
+  {
+   private:
+    byte*       m_StackPtr;
+    const byte* m_MemoryEnd;
+
+   public:
+    StackAllocator(byte* const memory_block, MemoryIndex memory_block_size) noexcept;
+
+    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept;
+    void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
+
+    operator Allocator() { return Allocator::BasicAllocatorConvert(*this); }
+  };
+
+  //-------------------------------------------------------------------------------------//
+  // Pool Allocator
+  //-------------------------------------------------------------------------------------//
+
+  struct PoolAllocatorBlock
+  {
+    PoolAllocatorBlock* next;
+  };
+
+  struct PoolAllocatorSetupResult
+  {
+    PoolAllocatorBlock* head;
+    MemoryIndex         num_elements;
+  };
+
+  /*!
+   * @brief
+   *  Features O(1) allocation and O(1) deletion by chunking up the memory into
+   *  fixed sized block.
+   *
+   *  The PoolAllocatorBlock does not actually take up any memory since
+   *  it is only used when it is in the pool freelist.
+   */
+  class PoolAllocator
+  {
+   private:
+    byte* const         m_MemoryBgn;
+    byte* const         m_MemoryEnd;
+    MemoryIndex         m_BlockSize;
+    MemoryIndex         m_Alignment;
+    PoolAllocatorBlock* m_PoolHead;
+    MemoryIndex         m_NumElements;
+
+   public:
+    /*!
+     * @brief
+     *   Make sure \p pool_block_size is aligned up to the designed alignment.
+     */
+    PoolAllocator(byte* const memory_block, const MemoryIndex memory_size, const MemoryIndex block_size, const MemoryIndex alignment) noexcept;
+
+    void             Reset() noexcept;
+    MemoryIndex      IndexOf(const void* ptr) const noexcept;
+    void*            FromIndex(const MemoryIndex index) noexcept;  // The index must have been from 'IndexOf'
+    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept;
+    void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
+
+    static PoolAllocatorSetupResult SetupPool(byte* const memory_block, const MemoryIndex memory_size, const MemoryIndex block_size, const MemoryIndex alignment) noexcept;
+
+    operator Allocator() { return Allocator::BasicAllocatorConvert(*this); }
+  };
+
+  /*!
+   * @copydoc PoolAllocator
+   */
+  template<MemoryIndex kblock_size, MemoryIndex num_blocks, MemoryIndex alignment = DefaultAlignment>
+  struct FixedPoolAllocator : public PoolAllocator
+  {
+    static constexpr std::size_t header_alignment  = alignof(PoolAllocatorBlock);
+    static constexpr std::size_t actual_alignment  = alignment < header_alignment ? header_alignment : alignment;
+    static constexpr std::size_t actual_block_size = Memory::AlignSize(kblock_size, actual_alignment);
+    static constexpr std::size_t memory_block_size = actual_block_size * num_blocks;
+
+    /*!
+     * @brief
+     *   `buffer` is not initialized by design since the `PoolAllocator` ctor writes to every byte anyway.
+     */
+    alignas(actual_alignment) byte buffer[memory_block_size];
+
+    FixedPoolAllocator() :
+      PoolAllocator(buffer, sizeof(buffer), actual_block_size)
+    {
+    }
+  };
+
+  //-------------------------------------------------------------------------------------//
+  // FreeList Allocator
+  //-------------------------------------------------------------------------------------//
+
+  struct FreeListNode;
+
+  /*!
+   * @brief
+   *   This allocator is a the most generic custom allocator with the heaviest
+   *   overhead.
+   *
+   *   This has the largest header size of any of the basic allocators but can be
+   *   used as a direct replacement for "malloc/free" and "new/delete" if
+   *   not called from multiple threads.
+   *
+   *   - Allocation   : A first fit policy is used.
+   *   - Deallocation : Added to freelist in address order, block merging is attempted.
+   */
+  class FreeListAllocator
+  {
+   private:
+    FreeListNode* m_Freelist;
+
+   public:
+    FreeListAllocator(byte* const memory_block, MemoryIndex memory_block_size);
+
+    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept;
+    void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
+
+   private:
+    AllocationResult AllocateInternal(const MemoryIndex size) noexcept;
+    void             DeallocateInternal(void* const ptr, const MemoryIndex size) noexcept;
+
+    operator Allocator() { return Allocator::BasicAllocatorConvert(*this); }
   };
 
 }  // namespace Memory

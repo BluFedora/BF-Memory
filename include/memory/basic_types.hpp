@@ -17,6 +17,10 @@
 
 using MemoryIndex = decltype(sizeof(int));  //!<
 
+#define bfKilobytes(n) static_cast<MemoryIndex>((n)*1024)
+#define bfMegabytes(n) static_cast<MemoryIndex>(bfKilobytes(n) * 1024)
+#define bfGigabytes(n) static_cast<MemoryIndex>(bfMegabytes(n) * 1024)
+
 using byte = unsigned char;  //!< Type to represent a single byte of memory.
 
 /*!
@@ -126,6 +130,22 @@ struct Allocator
     deallocate{deallocate_fn},
     state{state}
   {
+  }
+
+  template<typename BasicAllocator>
+  static Allocator BasicAllocatorConvert(BasicAllocator& allocator)
+  {
+    return Allocator(
+     &allocator,
+     [](void* const       allocator_state,
+        const MemoryIndex size,
+        const MemoryIndex alignment,
+        const AllocationSourceInfo& /* source_info */) -> AllocationResult {
+       return static_cast<BasicAllocator*>(allocator_state)->Allocate(size, alignment);
+     },
+     [](void* const allocator_state, void* const ptr, const MemoryIndex size, const MemoryIndex alignment) -> void {
+       return static_cast<BasicAllocator*>(allocator_state)->Deallocate(ptr, size, alignment);
+     });
   }
 };
 

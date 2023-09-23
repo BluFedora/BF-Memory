@@ -15,7 +15,6 @@ add_library(
     STATIC
       # Headers
       "include/bf/memory/basic_allocators.hpp"
-      "include/bf/memory/crt_allocator.hpp"
       "include/bf/memory/memory_api.hpp"
       "include/bf/memory/scoped_buffer.hpp"
       "include/bf/memory/stl_allocator.hpp"
@@ -30,10 +29,10 @@ add_library(
       "src/assertion.cpp"
       "src/alignment.cpp"
       "src/fixed_st_allocators.cpp"
-      "src/basic_allocators.cpp"
-      "src/crt_allocator.cpp"
+        
       "src/memory_api.cpp"
- "src/default_heap.cpp")
+     "src/default_heap.cpp"
+)
 
 target_include_directories(
   LibFoundation_Memory
