@@ -39,10 +39,10 @@ namespace Memory
 
     void             Clear() noexcept { m_Current = m_MemoryBgn; }
     bool             CanServiceAllocation(const MemoryIndex size, const MemoryIndex alignment) const noexcept;
-    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept;
+    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info  */) noexcept;
     void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
 
-    operator Allocator() { return Allocator::BasicAllocatorConvert(*this); }
+    operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
 
   /*!
@@ -108,10 +108,10 @@ namespace Memory
    public:
     StackAllocator(byte* const memory_block, MemoryIndex memory_block_size) noexcept;
 
-    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept;
+    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info  */) noexcept;
     void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
 
-    operator Allocator() { return Allocator::BasicAllocatorConvert(*this); }
+    operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
 
   //-------------------------------------------------------------------------------------//
@@ -157,12 +157,12 @@ namespace Memory
     void             Reset() noexcept;
     MemoryIndex      IndexOf(const void* ptr) const noexcept;
     void*            FromIndex(const MemoryIndex index) noexcept;  // The index must have been from 'IndexOf'
-    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept;
+    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info  */) noexcept;
     void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
 
     static PoolAllocatorSetupResult SetupPool(byte* const memory_block, const MemoryIndex memory_size, const MemoryIndex block_size, const MemoryIndex alignment) noexcept;
 
-    operator Allocator() { return Allocator::BasicAllocatorConvert(*this); }
+    operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
 
   /*!
@@ -214,14 +214,14 @@ namespace Memory
    public:
     FreeListAllocator(byte* const memory_block, MemoryIndex memory_block_size);
 
-    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept;
+    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info  */) noexcept;
     void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
 
    private:
     AllocationResult AllocateInternal(const MemoryIndex size) noexcept;
     void             DeallocateInternal(void* const ptr, const MemoryIndex size) noexcept;
 
-    operator Allocator() { return Allocator::BasicAllocatorConvert(*this); }
+    operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
 
 }  // namespace Memory

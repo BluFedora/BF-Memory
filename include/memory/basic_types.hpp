@@ -63,9 +63,13 @@ struct AllocationSourceInfo
 
 #if BF_MEMORY_ALLOCATION_INFO
 #define MemoryMakeAllocationSourceInfo() \
-  AllocationSourceInfo { __FILE__, __FUNCTION__, __LINE__ }
+  AllocationSourceInfo { __FILE__, __func__, __LINE__ }
+#define MemoryMakeAllocationSourceInfoDefaultArg() \
+  AllocationSourceInfo { __builtin_FILE(), __builtin_FUNCTION(), __builtin_LINE() }
 #else
 #define MemoryMakeAllocationSourceInfo() \
+  AllocationSourceInfo {}
+#define MemoryMakeAllocationSourceInfoDefaultArg() \
   AllocationSourceInfo {}
 #endif
 
@@ -111,21 +115,21 @@ using AllocateFn = AllocationResult (*)(
  */
 using DeallocateFn = void (*)(void* const allocator_state, void* const ptr, const MemoryIndex size, const MemoryIndex alignment);
 
-struct Allocator
+struct IAllocator
 {
   AllocateFn   allocate;
   DeallocateFn deallocate;
   void*        state;
 
-  Allocator()                                = default;
-  Allocator(const Allocator& rhs)            = default;
-  Allocator(Allocator&& rhs)                 = default;
-  Allocator& operator=(const Allocator& rhs) = default;
-  Allocator& operator=(Allocator&& rhs)      = default;
+  IAllocator()                                 = default;
+  IAllocator(const IAllocator& rhs)            = default;
+  IAllocator(IAllocator&& rhs)                 = default;
+  IAllocator& operator=(const IAllocator& rhs) = default;
+  IAllocator& operator=(IAllocator&& rhs)      = default;
 
-  Allocator(void* const        state,
-            const AllocateFn   allocate_fn,
-            const DeallocateFn deallocate_fn) :
+  IAllocator(void* const        state,
+             const AllocateFn   allocate_fn,
+             const DeallocateFn deallocate_fn) :
     allocate{allocate_fn},
     deallocate{deallocate_fn},
     state{state}
@@ -133,19 +137,33 @@ struct Allocator
   }
 
   template<typename BasicAllocator>
-  static Allocator BasicAllocatorConvert(BasicAllocator& allocator)
+  static IAllocator BasicAllocatorConvert(BasicAllocator& allocator)
   {
-    return Allocator(
+    return IAllocator(
      &allocator,
-     [](void* const       allocator_state,
-        const MemoryIndex size,
-        const MemoryIndex alignment,
-        const AllocationSourceInfo& /* source_info */) -> AllocationResult {
-       return static_cast<BasicAllocator*>(allocator_state)->Allocate(size, alignment);
+     [](void* const                 allocator_state,
+        const MemoryIndex           size,
+        const MemoryIndex           alignment,
+        const AllocationSourceInfo& source_info) -> AllocationResult {
+       return static_cast<BasicAllocator*>(allocator_state)->Allocate(size, alignment, source_info);
      },
      [](void* const allocator_state, void* const ptr, const MemoryIndex size, const MemoryIndex alignment) -> void {
        return static_cast<BasicAllocator*>(allocator_state)->Deallocate(ptr, size, alignment);
      });
+  }
+};
+
+// Helper Class for allowing both polymorphic and static interface.
+template<typename BaseAllocator>
+class Allocator : public BaseAllocator
+  , public IAllocator
+{
+ public:
+  template<typename... Args>
+  Allocator(Args&&... args) :
+    BaseAllocator(static_cast<decltype(args)&&>(args)...),
+    IAllocator(IAllocator::BasicAllocatorConvert(static_cast<BaseAllocator&>(*this)))
+  {
   }
 };
 

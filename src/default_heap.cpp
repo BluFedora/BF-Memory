@@ -15,9 +15,11 @@
 
 #include <new>
 
+#include <cstdio>
+
 struct CxxFreeStoreAllocator
 {
-  AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment) const noexcept
+  AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) const noexcept
   {
     void* const ptr = ::operator new(size, std::align_val_t{alignment}, std::nothrow);
 
@@ -45,9 +47,9 @@ using DefaultCRTHeap = BaseDefaultCRTHeap<Memory::AllocationMarkPolicy::UNMARKED
 #endif
 
 static DefaultCRTHeap s_DefaultHeapImpl = {};
-static Allocator      s_DefaultHeap     = s_DefaultHeapImpl;
+static IAllocator      s_DefaultHeap     = s_DefaultHeapImpl;
 
-Allocator& Memory::DefaultHeap() noexcept
+IAllocator& Memory::DefaultHeap() noexcept
 {
   return s_DefaultHeap;
 }

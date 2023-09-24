@@ -57,15 +57,7 @@ namespace bf
     NONE,      //!< Memory is left alone.
     DESTRUCT,  //!< Will destruct the memory to type `T`.
   };
-
-  using IAllocator = Allocator;
 }  // namespace bf
-
-struct Allocator;
-namespace bf
-{
-  using IAllocator = Allocator;
-}
 
 //-------------------------------------------------------------------------------------//
 // Utilities Interface
@@ -149,15 +141,19 @@ DstIterator bfMemUninitializedMoveRev(SrcIterator src_bgn, SrcIterator src_end, 
  *
  * @see bfMemDeallocate
  */
-inline AllocationResult(bfMemAllocate)(const Allocator allocator, const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info)
-{
-  return allocator.allocate(allocator.state, size, alignment, source_info);
-}
-
 template<typename AllocatorConcept>
-inline AllocationResult(bfMemAllocate)(AllocatorConcept& allocator, const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info)
+inline AllocationResult(bfMemAllocate)(AllocatorConcept&& allocator, const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info)
 {
-  return allocator.Allocate(size, alignment);
+  using AllocatorConceptRaw = std::decay_t<AllocatorConcept>;
+
+  if constexpr (std::is_same_v<AllocatorConceptRaw, IAllocator>)
+  {
+    return allocator.allocate(allocator.state, size, alignment, source_info);
+  }
+  else
+  {
+    return allocator.Allocate(size, alignment, source_info);
+  }
 }
 
 #define bfMemAllocate(allocator, size, alignment) (bfMemAllocate)((allocator), (size), (alignment), MemoryMakeAllocationSourceInfo())
@@ -178,7 +174,7 @@ inline AllocationResult(bfMemAllocate)(AllocatorConcept& allocator, const Memory
  * @see bfMemAllocateAligned
  */
 // TODO(SR): Dont take in AllocationResult.
-inline void bfMemDeallocate(const Allocator allocator, const AllocationResult mem_block, const std::size_t alignment)
+inline void bfMemDeallocate(const IAllocator allocator, const AllocationResult mem_block, const std::size_t alignment)
 {
   return allocator.deallocate(allocator.state, mem_block.ptr, mem_block.num_bytes, alignment);
 }
@@ -189,7 +185,7 @@ inline void bfMemDeallocate(AllocatorConcept&& allocator, const AllocationResult
   return allocator.Deallocate(mem_block.ptr, mem_block.num_bytes, alignment);
 }
 
-inline void bfMemDeallocate(const Allocator allocator, void* const ptr, const MemoryIndex size, const std::size_t alignment)
+inline void bfMemDeallocate(const IAllocator allocator, void* const ptr, const MemoryIndex size, const std::size_t alignment)
 {
   return allocator.deallocate(allocator.state, ptr, size, alignment);
 }
@@ -295,12 +291,12 @@ void bfMemDestructArray(T* const array, const std::size_t num_elements);
  * @see bf::MemArrayInit
  */
 template<typename T, bf::MemArrayInit init = bf::MemArrayInit::UNINITIALIZE, typename AllocatorConcept>
-T* bfMemAllocateArray(AllocatorConcept&& allocator, const std::size_t num_elements, const std::size_t alignment = alignof(T));
+T* bfMemAllocateArray(AllocatorConcept&& allocator, const std::size_t num_elements, const std::size_t alignment = alignof(T), const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg())
+{
+  const AllocationResult mem_block = (bfMemAllocate)(allocator, sizeof(T) * num_elements, alignment, source_info);
 
-// #define bfMemAllocateArrayX(allocator, T, init, num_elements)          (bfMemAllocateArray<T, init>)((allocator), (num_elements), MemoryMakeAllocationSourceInfo())
-// #define bfMemAllocateArrayTrivial(allocator, T, num_elements)          bfMemAllocateArrayX((allocator), T, bf::MemArrayInit::UNINITIALIZE, (num_elements))
-// #define bfMemAllocateArrayDefaultConstruct(allocator, T, num_elements) bfMemAllocateArrayX((allocator), T, bf::MemArrayInit::UNINITIALIZE, (num_elements))
-// #define bfMemAllocateArrayValueConstruct(allocator, T, num_elements)   bfMemAllocateArrayX((allocator), T, bf::MemArrayInit::UNINITIALIZE, (num_elements))
+  return bfMemArrayConstruct<T, init>(mem_block, num_elements);
+}
 
 /*!
  * @brief
@@ -322,22 +318,14 @@ T* bfMemAllocateArray(AllocatorConcept&& allocator, const std::size_t num_elemen
  * @see bfMemAllocateArray
  */
 template<bf::MemArrayDestroy destroy = bf::MemArrayDestroy::NONE, typename T>
-void bfMemDeallocateArray(const Allocator allocator, T* const array, const std::size_t num_elements, const std::size_t alignment = alignof(T));
+void bfMemDeallocateArray(const IAllocator allocator, T* const array, const std::size_t num_elements, const std::size_t alignment = alignof(T));
 
 //-------------------------------------------------------------------------------------//
 // Templated Function Implementations
 //-------------------------------------------------------------------------------------//
 
-template<typename T, bf::MemArrayInit init, typename AllocatorConcept>
-T* bfMemAllocateArray(AllocatorConcept&& allocator, const std::size_t num_elements, const std::size_t alignment)
-{
-  const AllocationResult mem_block = bfMemAllocate(allocator, sizeof(T) * num_elements, alignment);
-
-  return bfMemArrayConstruct<T, init>(mem_block, num_elements);
-}
-
 template<bf::MemArrayDestroy destroy, typename T>
-void bfMemDeallocateArray(const Allocator allocator, T* const array, const std::size_t num_elements, const std::size_t alignment)
+void bfMemDeallocateArray(const IAllocator allocator, T* const array, const std::size_t num_elements, const std::size_t alignment)
 {
   if (array && num_elements)
   {

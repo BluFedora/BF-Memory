@@ -40,7 +40,7 @@ namespace bf
     {
     }
 
-    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept
+    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info */) noexcept
     {
       bfMemAssert(size <= BlockSize, "This Allocator is made for Objects of size %u (not %u)!", unsigned(BlockSize), unsigned(size));
 
@@ -99,34 +99,8 @@ namespace bf
       Clear();
     }
 
-    operator Allocator() { return Allocator::BasicAllocatorConvert(*this); }
+    operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
-
-  //-------------------------------------------------------------------------------------//
-  // FreeList Allocator
-  //-------------------------------------------------------------------------------------//
-
-  struct FreeListNode;
-
-  /*!
-   * @brief
-   *   This allocator is a the most generic custom allocator with the heaviest
-   *   overhead.
-   *
-   *   This has the largest header size of any of the basic allocators but can be
-   *   used as a direct replacement for "malloc/free" and "new/delete" if
-   *   not called from multiple threads.
-   *
-   *   - Allocation   : A first fit policy is used.
-   *   - Deallocation : Added to freelist in address order, block merging is attempted.
-   */
-  struct FreeListAllocator : public IAllocator
-  {
-    FreeListNode* freelist;
-
-    FreeListAllocator(byte* const memory_block, std::size_t memory_block_size);
-  };
-
 }  // namespace bf
 
 #endif /* LibFoundation_Memory_API_HPP */

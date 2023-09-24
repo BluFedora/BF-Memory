@@ -18,7 +18,7 @@ bool Memory::LinearAllocator::CanServiceAllocation(const MemoryIndex size, const
   return (reinterpret_cast<const byte*>(aligned_ptr) + size) <= m_MemoryEnd;
 }
 
-AllocationResult Memory::LinearAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept
+AllocationResult Memory::LinearAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo&) noexcept
 {
   void* const aligned_ptr     = AlignPointer(m_Current, alignment);
   byte* const aligned_ptr_end = static_cast<byte*>(aligned_ptr) + size;
@@ -68,17 +68,20 @@ struct StackAllocatorHeader
   MemoryIndex num_bytes;
 };
 
-static void WriteStackAllocatorHeader(void* const dst, byte* const restore_point, const MemoryIndex num_bytes_allocated)
+namespace Stack
 {
-  std::memcpy(static_cast<byte*>(dst) + offsetof(StackAllocatorHeader, restore), &restore_point, sizeof(StackAllocatorHeader::restore));
-  std::memcpy(static_cast<byte*>(dst) + offsetof(StackAllocatorHeader, num_bytes), &num_bytes_allocated, sizeof(StackAllocatorHeader::num_bytes));
-}
+  static void WriteHeader(void* const dst, byte* const restore_point, const MemoryIndex num_bytes_allocated)
+  {
+    std::memcpy(static_cast<byte*>(dst) + offsetof(StackAllocatorHeader, restore), &restore_point, sizeof(StackAllocatorHeader::restore));
+    std::memcpy(static_cast<byte*>(dst) + offsetof(StackAllocatorHeader, num_bytes), &num_bytes_allocated, sizeof(StackAllocatorHeader::num_bytes));
+  }
 
-static void ReadStackAllocatorHeader(StackAllocatorHeader* const dst, const void* const src)
-{
-  std::memcpy(&dst->restore, static_cast<const byte*>(src) + offsetof(StackAllocatorHeader, restore), sizeof(StackAllocatorHeader::restore));
-  std::memcpy(&dst->num_bytes, static_cast<const byte*>(src) + offsetof(StackAllocatorHeader, num_bytes), sizeof(StackAllocatorHeader::num_bytes));
-}
+  static void ReadHeader(StackAllocatorHeader* const dst, const void* const src)
+  {
+    std::memcpy(&dst->restore, static_cast<const byte*>(src) + offsetof(StackAllocatorHeader, restore), sizeof(StackAllocatorHeader::restore));
+    std::memcpy(&dst->num_bytes, static_cast<const byte*>(src) + offsetof(StackAllocatorHeader, num_bytes), sizeof(StackAllocatorHeader::num_bytes));
+  }
+}  // namespace Stack
 
 Memory::StackAllocator::StackAllocator(byte* const memory_block, MemoryIndex memory_block_size) noexcept :
   m_StackPtr{memory_block},
@@ -86,7 +89,7 @@ Memory::StackAllocator::StackAllocator(byte* const memory_block, MemoryIndex mem
 {
 }
 
-AllocationResult Memory::StackAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept
+AllocationResult Memory::StackAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo&) noexcept
 {
   const std::size_t needed_memory = size + sizeof(StackAllocatorHeader);
   byte* const       restore_point = m_StackPtr;
@@ -96,7 +99,7 @@ AllocationResult Memory::StackAllocator::Allocate(const MemoryIndex size, const 
   {
     byte* const header_dst = aligned_ptr - sizeof(StackAllocatorHeader);
 
-    WriteStackAllocatorHeader(header_dst, restore_point, needed_memory);
+    Stack::WriteHeader(header_dst, restore_point, needed_memory);
 
     return AllocationResult{aligned_ptr, size};
   }
@@ -107,7 +110,7 @@ AllocationResult Memory::StackAllocator::Allocate(const MemoryIndex size, const 
 void Memory::StackAllocator::Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
 {
   StackAllocatorHeader header;
-  ReadStackAllocatorHeader(&header, reinterpret_cast<byte*>(ptr) - sizeof(StackAllocatorHeader));
+  Stack::ReadHeader(&header, reinterpret_cast<byte*>(ptr) - sizeof(StackAllocatorHeader));
 
   bfMemAssert(header.num_bytes == size, "Incorrect number of bytes passed in.");
   bfMemAssert(header.restore < m_MemoryEnd, "Invalid pointer passed in (Restore point invalid).");
@@ -152,7 +155,7 @@ void* Memory::PoolAllocator::FromIndex(const MemoryIndex index) noexcept
   return m_MemoryBgn + m_BlockSize * index;
 }
 
-AllocationResult Memory::PoolAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept
+AllocationResult Memory::PoolAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo&) noexcept
 {
   bfMemAssert(size <= m_BlockSize, "This Allocator is made for Objects of a certain size!");
   bfMemAssert(alignment <= m_Alignment, "This Allocator is made for Objects of a certain alignment!");
@@ -234,7 +237,7 @@ namespace FreeList
   }
 }  // namespace FreeList
 
-AllocationResult Memory::FreeListAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment) noexcept
+AllocationResult Memory::FreeListAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo&) noexcept
 {
   bfMemAssert(alignment <= FreeList::MaxAlignment, "Alignment too large.");
 
