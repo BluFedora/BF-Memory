@@ -14,7 +14,6 @@ add_library(
   LibFoundation_Memory 
     STATIC
       # Headers
-      "include/bf/memory/basic_allocators.hpp"
       "include/bf/memory/memory_api.hpp"
       "include/bf/memory/scoped_buffer.hpp"
       "include/bf/memory/stl_allocator.hpp"
@@ -25,6 +24,7 @@ add_library(
       "include/memory/default_heap.hpp"
       "include/memory/fixed_st_allocators.hpp"
       "include/memory/fixed_mt_allocators.hpp"
+      "include/memory/growing_st_allocators.hpp"
       "include/memory/memory_manager.hpp"
 
       # Sources
@@ -33,6 +33,7 @@ add_library(
       "src/default_heap.cpp"
       "src/fixed_st_allocators.cpp"
       "src/fixed_mt_allocators.cpp"
+      "src/growing_st_allocators.cpp"
       "src/memory_api.cpp"
 )
 

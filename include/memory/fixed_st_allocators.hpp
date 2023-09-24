@@ -126,6 +126,7 @@ namespace Memory
   struct PoolAllocatorSetupResult
   {
     PoolAllocatorBlock* head;
+    PoolAllocatorBlock* tail;
     MemoryIndex         num_elements;
   };
 
@@ -169,21 +170,23 @@ namespace Memory
    * @copydoc PoolAllocator
    */
   template<MemoryIndex kblock_size, MemoryIndex num_blocks, MemoryIndex alignment = DefaultAlignment>
-  struct FixedPoolAllocator : public PoolAllocator
+  class FixedPoolAllocator : public PoolAllocator
   {
     static constexpr std::size_t header_alignment  = alignof(PoolAllocatorBlock);
     static constexpr std::size_t actual_alignment  = alignment < header_alignment ? header_alignment : alignment;
-    static constexpr std::size_t actual_block_size = Memory::AlignSize(kblock_size, actual_alignment);
+    static constexpr std::size_t actual_block_size = Memory::AlignSize<actual_alignment>(kblock_size);
     static constexpr std::size_t memory_block_size = actual_block_size * num_blocks;
 
+   private:
     /*!
      * @brief
-     *   `buffer` is not initialized by design since the `PoolAllocator` ctor writes to every byte anyway.
+     *   `buffer` is not initialized by design since the `PoolAllocator` ctor writes to it.
      */
-    alignas(actual_alignment) byte buffer[memory_block_size];
+    alignas(actual_alignment) byte m_Buffer[memory_block_size];
 
+   public:
     FixedPoolAllocator() :
-      PoolAllocator(buffer, sizeof(buffer), actual_block_size)
+      PoolAllocator(m_Buffer, sizeof(m_Buffer), actual_block_size)
     {
     }
   };

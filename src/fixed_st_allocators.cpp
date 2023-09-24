@@ -70,16 +70,19 @@ struct StackAllocatorHeader
 
 namespace Stack
 {
-  static void WriteHeader(void* const dst, byte* const restore_point, const MemoryIndex num_bytes_allocated)
+  static void WriteHeader(void* const dst, const StackAllocatorHeader& header)
   {
-    std::memcpy(static_cast<byte*>(dst) + offsetof(StackAllocatorHeader, restore), &restore_point, sizeof(StackAllocatorHeader::restore));
-    std::memcpy(static_cast<byte*>(dst) + offsetof(StackAllocatorHeader, num_bytes), &num_bytes_allocated, sizeof(StackAllocatorHeader::num_bytes));
+    std::memcpy(static_cast<byte*>(dst) + offsetof(StackAllocatorHeader, restore), &header.restore, sizeof(StackAllocatorHeader::restore));
+    std::memcpy(static_cast<byte*>(dst) + offsetof(StackAllocatorHeader, num_bytes), &header.num_bytes, sizeof(StackAllocatorHeader::num_bytes));
   }
 
-  static void ReadHeader(StackAllocatorHeader* const dst, const void* const src)
+  static StackAllocatorHeader ReadHeader(const void* const src)
   {
-    std::memcpy(&dst->restore, static_cast<const byte*>(src) + offsetof(StackAllocatorHeader, restore), sizeof(StackAllocatorHeader::restore));
-    std::memcpy(&dst->num_bytes, static_cast<const byte*>(src) + offsetof(StackAllocatorHeader, num_bytes), sizeof(StackAllocatorHeader::num_bytes));
+    StackAllocatorHeader result;
+    std::memcpy(&result.restore, static_cast<const byte*>(src) + offsetof(StackAllocatorHeader, restore), sizeof(StackAllocatorHeader::restore));
+    std::memcpy(&result.num_bytes, static_cast<const byte*>(src) + offsetof(StackAllocatorHeader, num_bytes), sizeof(StackAllocatorHeader::num_bytes));
+
+    return result;
   }
 }  // namespace Stack
 
@@ -97,9 +100,9 @@ AllocationResult Memory::StackAllocator::Allocate(const MemoryIndex size, const 
 
   if ((aligned_ptr + needed_memory) <= m_MemoryEnd)
   {
-    byte* const header_dst = aligned_ptr - sizeof(StackAllocatorHeader);
+    m_StackPtr += needed_memory;
 
-    Stack::WriteHeader(header_dst, restore_point, needed_memory);
+    Stack::WriteHeader(aligned_ptr - sizeof(StackAllocatorHeader), StackAllocatorHeader{restore_point, needed_memory});
 
     return AllocationResult{aligned_ptr, size};
   }
@@ -109,12 +112,11 @@ AllocationResult Memory::StackAllocator::Allocate(const MemoryIndex size, const 
 
 void Memory::StackAllocator::Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
 {
-  StackAllocatorHeader header;
-  Stack::ReadHeader(&header, reinterpret_cast<byte*>(ptr) - sizeof(StackAllocatorHeader));
+  const StackAllocatorHeader header = Stack::ReadHeader(reinterpret_cast<byte*>(ptr) - sizeof(StackAllocatorHeader));
 
   bfMemAssert(header.num_bytes == size, "Incorrect number of bytes passed in.");
   bfMemAssert(header.restore < m_MemoryEnd, "Invalid pointer passed in (Restore point invalid).");
-  bfMemAssert(header.restore < m_StackPtr, "Invalid pointer passed in (Stack pointer should be ahead).");
+  bfMemAssert(header.restore < m_StackPtr, "Invalid pointer passed in (Stack pointer should be ahead of restore point).");
 
   m_StackPtr = header.restore;
 }
@@ -187,30 +189,32 @@ void Memory::PoolAllocator::Deallocate(void* const ptr, const MemoryIndex size, 
 
 Memory::PoolAllocatorSetupResult Memory::PoolAllocator::SetupPool(byte* const memory_block, const MemoryIndex memory_size, const MemoryIndex block_size, const MemoryIndex alignment) noexcept
 {
-  bfMemAssert(block_size >= sizeof(PoolAllocatorBlock), "Each block must be atleast PoolAllocatorBlock in size.");
+  bfMemAssert(block_size >= sizeof(PoolAllocatorBlock), "Each block must be at least PoolAllocatorBlock in size.");
 
-  const MemoryIndex         aligned_block_size = AlignSize(block_size, alignment);
-  byte* const               base_address       = static_cast<byte*>(AlignPointer(memory_block, alignment));
-  const byte* const         memory_end         = memory_block + memory_size;
-  const MemoryIndex         memory_available   = (memory_end - base_address);
-  const MemoryIndex         num_elements       = memory_available / aligned_block_size;
-  PoolAllocatorBlock* const pool_head          = reinterpret_cast<PoolAllocatorBlock*>(base_address);
+  const MemoryIndex aligned_block_size = AlignSize(block_size, alignment);
+  byte* const       base_address       = static_cast<byte*>(AlignPointer(memory_block, alignment));
+  const byte* const memory_end         = memory_block + memory_size;
+  const MemoryIndex memory_available   = (memory_end - base_address);
+  const MemoryIndex num_elements       = memory_available / aligned_block_size;
 
-  if (num_elements)
+  if (num_elements != 0u)
   {
     const auto NodeAt = [base_address, aligned_block_size](const MemoryIndex index) -> PoolAllocatorBlock* {
       return reinterpret_cast<PoolAllocatorBlock*>(base_address + aligned_block_size * index);
     };
 
     const MemoryIndex last_index = num_elements - 1u;
+
     for (MemoryIndex index = 0; index < last_index; ++index)
     {
       NodeAt(index + 0u)->next = NodeAt(index + 1u);
     }
     NodeAt(last_index)->next = nullptr;
+
+    return {NodeAt(0u), NodeAt(last_index), num_elements};
   }
 
-  return {pool_head, num_elements};
+  return {nullptr, nullptr, 0u};
 }
 
 //-------------------------------------------------------------------------------------//
