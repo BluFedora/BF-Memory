@@ -2,14 +2,13 @@
 /*!
  * @file   scoped_buffer.hpp
  * @author Shareef Raheem (https://blufedora.github.io/)
- * @date   2022-09-18
  * @brief
  *   RAII Memory managed buffer.
  *
  * @todo ScopedBuffer Implement move and copy constructors and assignment.
  * @todo ScopedBuffer define destruction sematics.
  *
- * @copyright Copyright (c) 2019-2022 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2022-2023 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef BF_SCOPED_BUFFER_HPP
@@ -106,7 +105,7 @@ namespace bf
 /*
   MIT License
 
-  Copyright (c) 2022 Shareef Abdoul-Raheem
+  Copyright (c) 2022-2023 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

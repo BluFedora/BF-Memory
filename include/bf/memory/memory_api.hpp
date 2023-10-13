@@ -63,6 +63,8 @@ namespace bf
 // Utilities Interface
 //-------------------------------------------------------------------------------------//
 
+// TODO(SR): Add ZeroStruct and ByteCopyStruct.
+
 /*!
  * @brief
  *   Same as std::memcpy.

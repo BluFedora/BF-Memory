@@ -136,6 +136,18 @@ struct IAllocator
   {
   }
 
+  AllocationResult Allocate(const MemoryIndex           size,
+                            const MemoryIndex           alignment,
+                            const AllocationSourceInfo& source_info) noexcept
+  {
+    return allocate(state, size, alignment, source_info);
+  }
+
+  void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment)
+  {
+    return deallocate(state, ptr, size, alignment);
+  }
+
   template<typename BasicAllocator>
   static IAllocator BasicAllocatorConvert(BasicAllocator& allocator)
   {
@@ -165,6 +177,9 @@ class Allocator : public BaseAllocator
     IAllocator(IAllocator::BasicAllocatorConvert(static_cast<BaseAllocator&>(*this)))
   {
   }
+
+  using BaseAllocator::Allocate;
+  using BaseAllocator::Deallocate;
 };
 
 #endif  // LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP
