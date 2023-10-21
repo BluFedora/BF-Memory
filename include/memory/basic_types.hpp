@@ -25,6 +25,39 @@ using byte = unsigned char;  //!< Type to represent a single byte of memory.
 
 /*!
  * @brief
+ *   Type of keep track of the required size and alignment of a heterogeneous buffer of memory.
+ */
+struct MemoryRequirements
+{
+  MemoryIndex size      = 0u;
+  MemoryIndex alignment = 1u;
+
+  MemoryRequirements() noexcept  = default;
+
+  MemoryRequirements(const MemoryIndex size, const MemoryIndex alignment) noexcept  :
+    size{size},
+    alignment{alignment}
+  {
+  }
+
+  template<typename T>
+  MemoryIndex Append(const MemoryIndex element_count = 1u, const MemoryIndex element_alignment = alignof(T)) noexcept
+  {
+    return Append(sizeof(T), element_count, element_alignment);
+  }
+
+  // Returns the offset in the buffer that this element(s) would be located at.
+  MemoryIndex Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept;
+};
+
+template<typename TagType>
+struct TaggedMemoryRequirements : public MemoryRequirements
+{
+  using MemoryRequirements::MemoryRequirements;
+};
+
+/*!
+ * @brief
  *   The result of an allocation from an IAllocator.
  */
 struct AllocationResult

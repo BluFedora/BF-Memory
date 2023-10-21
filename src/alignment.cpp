@@ -59,6 +59,22 @@ void* Memory::StandardAlign(const size_t alignment, const size_t size, void** pt
   return NULL;
 }
 
+MemoryIndex MemoryRequirements::Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
+{
+  // TODO(SR): Check for overlflow?
+
+  const MemoryIndex allocation_offset = Memory::AlignSize(size, element_alignment);
+
+  size = allocation_offset + element_size * element_count;
+
+  if (element_alignment > alignment)
+  {
+    alignment = element_alignment;
+  }
+
+  return allocation_offset;
+}
+
 /******************************************************************************/
 /*
   MIT License
