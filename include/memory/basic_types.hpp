@@ -32,9 +32,9 @@ struct MemoryRequirements
   MemoryIndex size      = 0u;
   MemoryIndex alignment = 1u;
 
-  MemoryRequirements() noexcept  = default;
+  MemoryRequirements() noexcept = default;
 
-  MemoryRequirements(const MemoryIndex size, const MemoryIndex alignment) noexcept  :
+  MemoryRequirements(const MemoryIndex size, const MemoryIndex alignment) noexcept :
     size{size},
     alignment{alignment}
   {
@@ -171,12 +171,12 @@ struct IAllocator
 
   AllocationResult Allocate(const MemoryIndex           size,
                             const MemoryIndex           alignment,
-                            const AllocationSourceInfo& source_info) noexcept
+                            const AllocationSourceInfo& source_info) const noexcept
   {
     return allocate(state, size, alignment, source_info);
   }
 
-  void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment)
+  void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) const noexcept
   {
     return deallocate(state, ptr, size, alignment);
   }
@@ -200,19 +200,23 @@ struct IAllocator
 
 // Helper Class for allowing both polymorphic and static interface.
 template<typename BaseAllocator>
-class Allocator : public BaseAllocator
-  , public IAllocator
+class Allocator : public IAllocator
 {
  public:
-  template<typename... Args>
-  Allocator(Args&&... args) :
-    BaseAllocator(static_cast<decltype(args)&&>(args)...),
+  Allocator() :
     IAllocator(IAllocator::BasicAllocatorConvert(static_cast<BaseAllocator&>(*this)))
   {
   }
 
-  using BaseAllocator::Allocate;
-  using BaseAllocator::Deallocate;
+  AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) const noexcept
+  {
+    return static_cast<BaseAllocator*>(this)->Allocate(size, alignment, source_info);
+  }
+
+  void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
+  {
+    return static_cast<BaseAllocator*>(this)->Deallocate(ptr, size, alignment);
+  }
 };
 
 #endif  // LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP

@@ -176,12 +176,6 @@ inline AllocationResult(bfMemAllocate)(AllocatorConcept&& allocator, const Memor
  * @see bfMemAllocateAligned
  */
 // TODO(SR): Dont take in AllocationResult.
-inline void bfMemDeallocate(const IAllocator allocator, const AllocationResult mem_block, const std::size_t alignment)
-{
-  return allocator.deallocate(allocator.state, mem_block.ptr, mem_block.num_bytes, alignment);
-}
-
-// TODO(SR): Dont take in AllocationResult.
 template<typename AllocatorConcept>
 inline void bfMemDeallocate(AllocatorConcept&& allocator, const AllocationResult mem_block, const std::size_t alignment)
 {
