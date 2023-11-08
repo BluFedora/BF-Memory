@@ -201,6 +201,7 @@ struct IAllocator
 // Helper Class for allowing both polymorphic and static interface.
 template<typename BaseAllocator>
 class Allocator : public IAllocator
+  , public BaseAllocator
 {
  public:
   Allocator() :

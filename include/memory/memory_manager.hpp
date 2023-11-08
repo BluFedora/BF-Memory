@@ -19,16 +19,16 @@ namespace Memory
   static constexpr byte AllocatedBytePattern = 0xCD;
   static constexpr byte FreeBytePattern      = 0xDD;
 
-  enum class BoundCheckingPolicy : bool
-  {
-    UNCHECKED = false,
-    CHECKED   = true,
-  };
-
   enum class AllocationMarkPolicy : bool
   {
     UNMARKED,
     MARK,
+  };
+
+  enum class BoundCheckingPolicy : bool
+  {
+    UNCHECKED = false,
+    CHECKED   = true,
   };
 
   template<BoundCheckingPolicy BoundCheck>
@@ -85,10 +85,25 @@ namespace Memory
     void Unlock() const noexcept {}
   };
 
+  struct MemoryTrackAllocate
+  {
+    AllocationResult     allocation;
+    MemoryIndex          requested_bytes;
+    MemoryIndex          alignment;
+    AllocationSourceInfo source_info;
+  };
+
+  struct MemoryTrackDeallocate
+  {
+    void*       ptr;
+    MemoryIndex num_bytes;
+    MemoryIndex alignment;
+  };
+
   struct NoMemoryTracking
   {
-    void TrackAllocate(const AllocationResult& allocation, const MemoryIndex alignment, const AllocationSourceInfo& source_info) const noexcept {}
-    void TrackDeallocate(void* const ptr, const MemoryIndex size, MemoryIndex alignment) const noexcept {}
+    void TrackAllocate(const MemoryTrackAllocate& allocate_info) const noexcept {}
+    void TrackDeallocate(const MemoryTrackDeallocate& deallocate_info) const noexcept {}
   };
 
   template<typename AllocationState,
@@ -150,7 +165,7 @@ namespace Memory
         MarkAllocatedBytes<MarkPolicy>(mark_bytes, user_memory_size);
         GuardBytes<BoundCheck>(guard_bytes_back, guard_size);
 
-        AllocationTrackingPolicy::TrackAllocate(result, alignment, source_info);
+        AllocationTrackingPolicy::TrackAllocate(MemoryTrackAllocate{result, total_size, alignment, source_info});
 
         result = AllocationResult(mark_bytes, user_memory_size);
       }
@@ -192,7 +207,7 @@ namespace Memory
 
         MarkFreedBytes<MarkPolicy>(mark_bytes, size);
 
-        AllocationTrackingPolicy::TrackDeallocate(bytes, total_size, alignment);
+        AllocationTrackingPolicy::TrackDeallocate(MemoryTrackDeallocate{bytes, total_size, alignment});
         static_cast<AllocationState*>(this)->Deallocate(bytes, total_size, alignment);
 
         LockPolicy::Unlock();
