@@ -220,6 +220,26 @@ class Allocator : public IAllocator
   }
 };
 
+template<typename BaseAllocator>
+class Allocator2 : public IAllocator
+{
+ public:
+  Allocator2() :
+    IAllocator(IAllocator::BasicAllocatorConvert(static_cast<BaseAllocator&>(*this)))
+  {
+  }
+
+  AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) const noexcept
+  {
+    return static_cast<BaseAllocator*>(this)->Allocate(size, alignment, source_info);
+  }
+
+  void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
+  {
+    return static_cast<BaseAllocator*>(this)->Deallocate(ptr, size, alignment);
+  }
+};
+
 #endif  // LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP
 
 /******************************************************************************/
