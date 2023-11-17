@@ -2,7 +2,6 @@
 /*!
  * @file   stl_allocator.hpp
  * @author Shareef Raheem (https://blufedora.github.io/)
- * @date   2019-12-26
  * @brief
  *   > This allocator is a designed for use with stl containers.
  *   > This must only be used in C++11 or later because C++03 required all allocators of a certain type to be compatible but this allocator is stateful.
@@ -11,7 +10,7 @@
  *    - [Allocator Boilerplate](https://howardhinnant.github.io/allocator_boilerplate.html)
  *    - [MSVC Allocators](https://docs.microsoft.com/en-us/cpp/standard-library/allocators?view=msvc-170)
  *
- * @copyright Copyright (c) 2019-2022 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2019-2023 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef BF_STL_ALLOCATOR_HPP
@@ -19,7 +18,7 @@
 
 #include "memory_api.hpp" /* IAllocator, Memory::DefaultHeap */
 
-#include "memory/default_heap.hpp" // Memory::DefaultHeap
+#include "memory/default_heap.hpp"  // Memory::DefaultHeap
 
 namespace bf
 {
@@ -183,7 +182,7 @@ namespace bf
 /*
   MIT License
 
-  Copyright (c) 2019-2022 Shareef Abdoul-Raheem
+  Copyright (c) 2019-2023 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

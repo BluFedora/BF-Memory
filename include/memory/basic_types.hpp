@@ -17,15 +17,29 @@
 
 using MemoryIndex = decltype(sizeof(int));  //!<
 
+using byte = unsigned char;  //!< Type to represent a single byte of memory.
+
 #define bfKilobytes(n) static_cast<MemoryIndex>((n)*1024)
 #define bfMegabytes(n) static_cast<MemoryIndex>(bfKilobytes(n) * 1024)
 #define bfGigabytes(n) static_cast<MemoryIndex>(bfMegabytes(n) * 1024)
 
-using byte = unsigned char;  //!< Type to represent a single byte of memory.
-
 /*!
  * @brief
- *   Type of keep track of the required size and alignment of a heterogeneous buffer of memory.
+ *   Helper type for calculating the size and alignment requirements of a single
+ *   buffer that will have a heterogeneous array types contained in it.
+ *
+ *   Example Usage:
+ *   ```cpp
+ *   constexpr MemoryIndex simd_sse_alignment = 16u;
+ *
+ *   MemoryRequirements mem_reqs = {};
+ *   const MemoryIndex buffer0_offset = mem_reqs.Append<int>();
+ *   const MemoryIndex buffer1_offset = mem_reqs.Append<char>(1999);
+ *   const MemoryIndex buffer2_offset = mem_reqs.Append<float>(1, simd_sse_alignment);
+ *
+ *
+ *
+ *   ```
  */
 struct MemoryRequirements
 {
@@ -40,6 +54,8 @@ struct MemoryRequirements
   {
   }
 
+  // Setup API
+
   template<typename T>
   MemoryIndex Append(const MemoryIndex element_count = 1u, const MemoryIndex element_alignment = alignof(T)) noexcept
   {
@@ -48,6 +64,24 @@ struct MemoryRequirements
 
   // Returns the offset in the buffer that this element(s) would be located at.
   MemoryIndex Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept;
+
+  // Only needed if you want to have multiple `MemoryRequirements` sized buffers consecutively in memory.
+  // Call after ypu are done `MemoryRequirements::Append`ing.
+  void AlignSizeToAlignment() noexcept;
+
+  // Query API
+
+  bool IsBufferValid(const void* const buffer, const MemoryIndex buffer_size) const noexcept;
+
+  // Allocation API
+
+  template<typename T>
+  static T* Alloc(void*& buffer, const void* const buffer_end, const MemoryIndex element_count = 1u, const MemoryIndex element_alignment = alignof(T)) noexcept
+  {
+    return static_cast<T*>(Alloc(buffer, buffer_end, sizeof(T), element_count, element_alignment));
+  }
+
+  static void* Alloc(void*& buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept;
 };
 
 template<typename TagType>

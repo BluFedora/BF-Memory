@@ -4,12 +4,6 @@
  * @author Shareef Raheem (https://blufedora.github.io/)
  * @date   2022-09-12
  * @brief
- *   Main API for the library.
- *
- *   Contains functions useful for low level memory manipulations.
- *
- *   Random Memory Notes:
- *     - new and malloc will always return memory aligned to alignof(std::max_align_t).
  *
  * @copyright Copyright (c) 2022-2023 Shareef Abdoul-Raheem
  */
@@ -18,7 +12,6 @@
 #define LibFoundation_Memory_API_HPP
 
 #include "memory/alignment.hpp"  // AlignPointer
-#include "memory/assertion.hpp"  // bfMemAssert
 
 #include <cstddef>  // size_t, max_align_t
 #include <memory>   // uninitialized_default_construct, uninitialized_value_construct
@@ -27,8 +20,6 @@
 
 namespace bf
 {
-  static constexpr std::size_t k_DefaultAlignment = alignof(std::max_align_t);
-
   template<typename T>
   struct is_trivially_relocatable : public std::true_type
   {
@@ -144,52 +135,41 @@ DstIterator bfMemUninitializedMoveRev(SrcIterator src_bgn, SrcIterator src_end, 
  * @see bfMemDeallocate
  */
 template<typename AllocatorConcept>
-inline AllocationResult(bfMemAllocate)(AllocatorConcept&& allocator, const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info)
+AllocationResult bfMemAllocate(AllocatorConcept&& allocator, const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info)
 {
-  using AllocatorConceptRaw = std::decay_t<AllocatorConcept>;
-
-  if constexpr (std::is_same_v<AllocatorConceptRaw, IAllocator>)
-  {
-    return allocator.allocate(allocator.state, size, alignment, source_info);
-  }
-  else
-  {
-    return allocator.Allocate(size, alignment, source_info);
-  }
+  return allocator.Allocate(size, alignment, source_info);
 }
-
 #define bfMemAllocate(allocator, size, alignment) (bfMemAllocate)((allocator), (size), (alignment), MemoryMakeAllocationSourceInfo())
 
 /*!
  * @brief
- *   Returns memory allocated from bfMemAllocateAligned back to \p self.
+ *   Returns memory allocated from bfMemAllocate back to \p allocator.
  *
- * @param self
+ * @tparam AllocatorConcept
+ *   Type of the allocator that follows the Allocator interface.
+ *
+ * @param allocator
  *   The allocator to return memory to.
  *
- * @param mem_block
- *   The block of memory to free. mem_block.size may be smaller than what was returned by bfMemAllocateAligned.
+ * @param ptr
+ *   The block of memory to free.
+ *
+ * @param size
+ *   The size passed into bfMemAllocate.
  *
  * @param alignment
- *   The alignment passed into bfMemAllocateAligned.
+ *   The alignment passed into bfMemAllocate.
  *
- * @see bfMemAllocateAligned
+ * @see bfMemAllocate
  */
-// TODO(SR): Dont take in AllocationResult.
 template<typename AllocatorConcept>
-inline void bfMemDeallocate(AllocatorConcept&& allocator, const AllocationResult mem_block, const std::size_t alignment)
-{
-  return allocator.Deallocate(mem_block.ptr, mem_block.num_bytes, alignment);
-}
-
-template<typename AllocatorConcept>
-inline void bfMemDeallocate(AllocatorConcept&& allocator, void* const ptr, const MemoryIndex size, const MemoryIndex alignment)
+void bfMemDeallocate(AllocatorConcept&& allocator, void* const ptr, const MemoryIndex size, const MemoryIndex alignment)
 {
   return allocator.Deallocate(ptr, size, alignment);
 }
 
 //-------------------------------------------------------------------------------------//
-// Single Object API: Aligned versions take up extra memory.
+// Single Object API: Calls constructor and destructors on the allcoated memory.
 //-------------------------------------------------------------------------------------//
 
 /*!
@@ -283,12 +263,7 @@ void bfMemDestructArray(T* const array, const std::size_t num_elements);
  * @see bf::MemArrayInit
  */
 template<typename T, bf::MemArrayInit init = bf::MemArrayInit::UNINITIALIZE, typename AllocatorConcept>
-T* bfMemAllocateArray(AllocatorConcept&& allocator, const std::size_t num_elements, const std::size_t alignment = alignof(T), const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg())
-{
-  const AllocationResult mem_block = (bfMemAllocate)(allocator, sizeof(T) * num_elements, alignment, source_info);
-
-  return bfMemArrayConstruct<T, init>(mem_block, num_elements);
-}
+T* bfMemAllocateArray(AllocatorConcept&& allocator, const std::size_t num_elements, const std::size_t alignment = alignof(T), const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg());
 
 /*!
  * @brief
@@ -316,13 +291,41 @@ void bfMemDeallocateArray(const IAllocator allocator, T* const array, const std:
 // Templated Function Implementations
 //-------------------------------------------------------------------------------------//
 
+template<typename T, bf::MemArrayInit init, typename AllocatorConcept>
+T* bfMemAllocateArray(AllocatorConcept&& allocator, const std::size_t num_elements, const std::size_t alignment, const AllocationSourceInfo& source_info)
+{
+  const AllocationResult mem_block = (bfMemAllocate)(allocator, sizeof(T) * num_elements, alignment, source_info);
+
+  return bfMemArrayConstruct<T, init>(mem_block, num_elements);
+}
+
 template<bf::MemArrayDestroy destroy, typename T>
 void bfMemDeallocateArray(const IAllocator allocator, T* const array, const std::size_t num_elements, const std::size_t alignment)
 {
   if (array && num_elements)
   {
     bfMemDestructArray<destroy>(array, num_elements);
-    bfMemDeallocate(allocator, AllocationResult{array, sizeof(T) * num_elements}, alignment);
+    bfMemDeallocate(allocator, array, sizeof(T) * num_elements, alignment);
+  }
+}
+
+//
+
+template<typename T, typename AllocatorConcept, typename... Args>
+T* bfMemAllocateObject(AllocatorConcept&& allocator, Args&&... args)
+{
+  const AllocationResult mem_block = bfMemAllocate(allocator, sizeof(T), alignof(T));
+
+  return mem_block ? new (mem_block.ptr) T(std::forward<Args>(args)...) : nullptr;
+}
+
+template<typename T, typename AllocatorConcept>
+void bfMemDeallocateObject(AllocatorConcept&& allocator, T* const ptr)
+{
+  if (ptr)
+  {
+    bfMemDestruct(ptr);
+    bfMemDeallocate(allocator, ptr, sizeof(T), alignof(T));
   }
 }
 
@@ -360,25 +363,7 @@ void bfMemDestructArray(T* const array, const std::size_t num_elements)
   }
 }
 
-//
 
-template<typename T, typename AllocatorConcept, typename... Args>
-T* bfMemAllocateObject(AllocatorConcept&& allocator, Args&&... args)
-{
-  const AllocationResult mem_block = bfMemAllocate(allocator, sizeof(T), alignof(T));
-
-  return mem_block ? new (mem_block.ptr) T(std::forward<Args>(args)...) : nullptr;
-}
-
-template<typename T, typename AllocatorConcept>
-void bfMemDeallocateObject(AllocatorConcept&& allocator, T* const ptr)
-{
-  if (ptr)
-  {
-    std::destroy_at(ptr);
-    bfMemDeallocate(allocator, AllocationResult{ptr, sizeof(T)}, alignof(T));
-  }
-}
 
 #endif /* LibFoundation_Memory_API_HPP */
 

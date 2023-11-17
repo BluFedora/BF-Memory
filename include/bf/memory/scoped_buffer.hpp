@@ -16,6 +16,8 @@
 
 #include "memory_api.hpp"
 
+#include "memory/default_heap.hpp" // DefaultHeap
+
 namespace bf
 {
   /*!
