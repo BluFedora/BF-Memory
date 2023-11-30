@@ -64,12 +64,12 @@ namespace bf
     }
 
     // Returns true on a successful resize.
-    template<MemArrayInit new_element_init = MemArrayInit::UNINITIALIZE>
+    template<Memory::ArrayConstruct new_element_init = Memory::ArrayConstruct::UNINITIALIZE>
     bool resize(const std::size_t new_size)
     {
       if (num_elements != new_size)
       {
-        T* const new_buffer = bfMemAllocateArray<T, MemArrayInit::UNINITIALIZE>(memory, new_size);
+        T* const new_buffer = bfMemAllocateArray<T, Memory::ArrayConstruct::UNINITIALIZE>(memory, new_size);
 
         if (new_buffer || new_size == 0u)
         {

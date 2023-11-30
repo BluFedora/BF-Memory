@@ -16,9 +16,9 @@ add_library(
       # Headers
       "include/bf/memory/memory_api.hpp"
       "include/bf/memory/scoped_buffer.hpp"
-      "include/bf/memory/stl_allocator.hpp"
 
       "include/memory/alignment.hpp"
+      "include/memory/allocation.hpp"
       "include/memory/assertion.hpp"
       "include/memory/basic_types.hpp"
       "include/memory/default_heap.hpp"
@@ -26,6 +26,8 @@ add_library(
       "include/memory/fixed_mt_allocators.hpp"
       "include/memory/growing_st_allocators.hpp"
       "include/memory/memory_manager.hpp"
+      "include/memory/smart_pointer.hpp"
+      "include/memory/stl_allocator.hpp"
 
       # Sources
       "src/assertion.cpp"

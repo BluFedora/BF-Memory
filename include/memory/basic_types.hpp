@@ -238,12 +238,14 @@ class Allocator : public IAllocator
   , public BaseAllocator
 {
  public:
-  Allocator() :
-    IAllocator(IAllocator::BasicAllocatorConvert(static_cast<BaseAllocator&>(*this)))
+  template<typename... Args>
+  Allocator(Args&&... args) :
+    IAllocator(IAllocator::BasicAllocatorConvert(static_cast<BaseAllocator&>(*this))),
+    BaseAllocator{static_cast<decltype(args)&&>(args)...}
   {
   }
 
-  AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) const noexcept
+  AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) noexcept
   {
     return static_cast<BaseAllocator*>(this)->Allocate(size, alignment, source_info);
   }

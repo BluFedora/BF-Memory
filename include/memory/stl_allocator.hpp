@@ -13,14 +13,15 @@
  * @copyright Copyright (c) 2019-2023 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
-#ifndef BF_STL_ALLOCATOR_HPP
-#define BF_STL_ALLOCATOR_HPP
+#ifndef LIB_FOUNDATION_MEMORY_STL_ALLOCATOR_HPP
+#define LIB_FOUNDATION_MEMORY_STL_ALLOCATOR_HPP
 
-#include "memory_api.hpp" /* IAllocator, Memory::DefaultHeap */
-
+#include "allocation.hpp"           // IAllocator, bfMemAllocateArray, bfMemDeallocateArray
 #include "memory/default_heap.hpp"  // Memory::DefaultHeap
 
-namespace bf
+#include <utility>  // forward
+
+namespace Memory
 {
   /*
      C++11/14 Allocator 'Concept'
@@ -98,7 +99,7 @@ namespace bf
    * @tparam T
    *   The type of object this allocated expects to make memory for.
    */
-  template<typename T>
+  template<typename T, typename AllocatorConcept = IAllocator>
   class StlAllocator
   {
    public:
@@ -124,18 +125,19 @@ namespace bf
     };
 
    private:
-    IAllocator &m_MemoryBackend;
+    AllocatorConcept &m_MemoryBackend;
 
    public:
-    StlAllocator(IAllocator &backend = Memory::DefaultHeap()) noexcept :
+    StlAllocator(AllocatorConcept &backend = Memory::DefaultHeap()) noexcept :
       m_MemoryBackend{backend}
     {
     }
 
-    template<class U>
-    StlAllocator(const StlAllocator<U> &rhs) noexcept :
+    template<class U, typename RhsAllocatorConcept>
+    StlAllocator(const StlAllocator<U, RhsAllocatorConcept> &rhs) noexcept :
       StlAllocator(rhs.backend())
     {
+      static_assert(std::is_convertible_v<RhsAllocatorConcept *, AllocatorConcept *>, "Allocator types not convertable.");
     }
 
     static size_type max_size() noexcept { return static_cast<size_type>(-1) / sizeof(value_type); }
@@ -171,12 +173,12 @@ namespace bf
       return &backend() != &rhs.backend();
     }
 
-    IAllocator &backend() const { return m_MemoryBackend; }
+    AllocatorConcept &backend() const { return m_MemoryBackend; }
   };
 
-}  // namespace bf
+}  // namespace Memory
 
-#endif /* BF_STL_ALLOCATOR_HPP */
+#endif  // LIB_FOUNDATION_MEMORY_STL_ALLOCATOR_HPP
 
 /******************************************************************************/
 /*
