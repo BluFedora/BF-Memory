@@ -261,6 +261,8 @@ void bfMemDeallocateObject(AllocatorConcept&& allocator, T* const ptr)
 
 //
 
+#include <memory> // uninitialized_default_construct, uninitialized_value_construct
+
 template<typename T, Memory::ArrayConstruct init>
 T* bfMemArrayConstruct(const AllocationResult mem_block, const MemoryIndex num_elements)
 {
@@ -289,6 +291,7 @@ void bfMemDestructArray(T* const array_bgn, const T* const array_end)
 {
   if constexpr (destroy == Memory::ArrayDestruct::DESTRUCT)
   {
+    // TODO(SR): Handle exceptions thrown in destructor.
     for (T* element = array_bgn; element < array_end; ++element)
     {
       element->~T();

@@ -112,8 +112,8 @@ namespace Memory
            typename AllocationTrackingPolicy,
            typename LockPolicy>
   class MemoryManager : public AllocationState
-    , private LockPolicy
-    , private AllocationTrackingPolicy
+    , public LockPolicy
+    , public AllocationTrackingPolicy
   {
    private:
     static constexpr bool MemoryMarkingEnabled = MarkPolicy != AllocationMarkPolicy::UNMARKED;

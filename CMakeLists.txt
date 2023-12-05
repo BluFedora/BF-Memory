@@ -14,9 +14,6 @@ add_library(
   LibFoundation_Memory 
     STATIC
       # Headers
-      "include/bf/memory/memory_api.hpp"
-      "include/bf/memory/scoped_buffer.hpp"
-
       "include/memory/alignment.hpp"
       "include/memory/allocation.hpp"
       "include/memory/assertion.hpp"
@@ -25,7 +22,9 @@ add_library(
       "include/memory/fixed_st_allocators.hpp"
       "include/memory/fixed_mt_allocators.hpp"
       "include/memory/growing_st_allocators.hpp"
+      "include/memory/memory_api.hpp"
       "include/memory/memory_manager.hpp"
+      "include/memory/scoped_buffer.hpp"
       "include/memory/smart_pointer.hpp"
       "include/memory/stl_allocator.hpp"
 

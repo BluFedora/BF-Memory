@@ -2,7 +2,7 @@
 
 #include "memory/fixed_st_allocators.hpp"  // PoolAllocator, PoolAllocatorBlock
 
-#include "bf/memory/memory_api.hpp"  // bfMemAllocate, bfMemDeallocate
+#include "memory/memory_api.hpp"  // bfMemAllocate, bfMemDeallocate
 
 Memory::GrowingPoolAllocator::GrowingPoolAllocator(
  IAllocator&       parent_allocator,

@@ -61,7 +61,7 @@ void* Memory::StandardAlign(const size_t alignment, const size_t size, void** pt
 
 MemoryIndex MemoryRequirements::Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
 {
-  // TODO(SR): Check for overlflow?
+  // TODO(SR): Check for overflow?
 
   const MemoryIndex allocation_offset = Memory::AlignSize(size, element_alignment);
 
@@ -76,21 +76,25 @@ void MemoryRequirements::AlignSizeToAlignment() noexcept
   size = Memory::AlignSize(size, alignment);
 }
 
-
 bool MemoryRequirements::IsBufferValid(const void* const buffer, const MemoryIndex buffer_size) const noexcept
 {
-  return buffer_size <= size && Memory::IsPointerAligned(buffer, alignment);
+  return buffer_size <= size && IsBufferValid(buffer);
 }
 
-void* MemoryRequirements::Alloc(void*& buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
+bool MemoryRequirements::IsBufferValid(const void* const buffer) const noexcept
 {
-  byte* const result = static_cast<byte*>(Memory::AlignPointer(buffer, element_alignment));
+  return Memory::IsPointerAligned(buffer, alignment);
+}
 
-  buffer = result + element_size * element_count;
+void* MemoryRequirements::Alloc(void** buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
+{
+  byte* const result = static_cast<byte*>(Memory::AlignPointer(*buffer, element_alignment));
 
-  bfMemAssert(buffer <= buffer_end, "Not enough space in buffer, incorrect buffer size for the MemoryRequirements passed in.");
+  *buffer = result + element_size * element_count;
 
-  return buffer;
+  bfMemAssert(*buffer <= buffer_end, "Not enough space in buffer, incorrect buffer size for the MemoryRequirements passed in.");
+
+  return result;
 }
 
 /******************************************************************************/

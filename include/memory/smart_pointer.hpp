@@ -144,15 +144,10 @@ namespace Memory
 }  // namespace Memory
 
 template<typename T>
-struct SharedPtr : public std::shared_ptr<T>
-{
-  using shared_ptr::shared_ptr;
-
-  constexpr std::remove_extent_t<T>& operator[](const MemoryIndex index) const noexcept { return get()[index]; }
-};
+using SharedPtr = std::shared_ptr<T>;
 
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<!std::is_array_v<T>>, typename... Args>
-  SharedPtr<T> bfMemMakeShared(AllocatorConcept* allocator, Args&&... args)
+SharedPtr<T> bfMemMakeShared(AllocatorConcept* allocator, Args&&... args)
 {
   return std::allocate_shared<T>(Memory::StlAllocator<T, AllocatorConcept>(*allocator), bfCxxFwd(args)...);
 }
@@ -186,12 +181,33 @@ SharedPtr<T> bfMemMakeShared(AllocatorConcept* allocator, const MemoryIndex num_
   T_* const memory = bfMemAllocateArray<T_, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements, alignof(T));
 
   return memory ? SharedPtr<T>(
-                   memory, [allocator, num_elements](T_* ptr) {
+                   memory, [allocator, num_elements](T_* const ptr) {
                      bfMemDeallocateArray<Memory::ArrayDestruct::DESTRUCT>(*allocator, ptr, num_elements, alignof(T));
                    },
                    Memory::StlAllocator<T_, AllocatorConcept>(*allocator)) :
                   nullptr;
 #endif
+}
+
+template<typename T, typename AllocatorConcept, typename = std::enable_if_t<Memory::is_unbounded_array_v<T>>>
+SharedPtr<T> bfMemMakeShared(AllocatorConcept* allocator, const MemoryIndex num_elements, const MemoryIndex element_alignment)
+{
+  using T_ = std::remove_extent_t<T>;
+
+  T_* const memory = bfMemAllocateArray<T_, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements, element_alignment);
+
+  return memory ? SharedPtr<T>(
+                   memory, [allocator, num_elements, element_alignment](T_* const ptr) {
+                     bfMemDeallocateArray<Memory::ArrayDestruct::DESTRUCT>(*allocator, ptr, num_elements, element_alignment);
+                   },
+                   Memory::StlAllocator<T_, AllocatorConcept>(*allocator)) :
+                  nullptr;
+}
+
+namespace detail
+{
+  template<typename T, typename AllocatorConcept>
+  using BaseUniquePtr = std::unique_ptr<T, std::conditional_t<std::is_array_v<T>, Memory::UniquePtrArrayDeleter<T, AllocatorConcept, std::extent_v<T>>, Memory::UniquePtrDeleter<AllocatorConcept>>>;
 }
 
 /*!
@@ -217,18 +233,18 @@ SharedPtr<T> bfMemMakeShared(AllocatorConcept* allocator, const MemoryIndex num_
  *   The allocator type for this UniquePtr.
  */
 template<typename T, typename AllocatorConcept = IAllocator>
-struct UniquePtr : public std::unique_ptr<T, std::conditional_t<std::is_array_v<T>, Memory::UniquePtrArrayDeleter<T, AllocatorConcept, std::extent_v<T>>, Memory::UniquePtrDeleter<AllocatorConcept>>>
+struct UniquePtr : public detail::BaseUniquePtr<T, AllocatorConcept>
 {
-  using unique_ptr::unique_ptr;
+  using detail::BaseUniquePtr<T, AllocatorConcept>::unique_ptr;
 
   template<typename RhsAllocator>
   UniquePtr(UniquePtr<T, RhsAllocator>&& rhs) :
-    unique_ptr(rhs.release(), std::move(rhs.get_deleter()))
+    detail::BaseUniquePtr<T, AllocatorConcept>(rhs.release(), std::move(rhs.get_deleter()))
   {
     static_assert(std::is_convertible_v<RhsAllocator*, AllocatorConcept*>, "Allocator types not convertable.");
   }
 
-  constexpr std::remove_extent_t<T>& operator[](const MemoryIndex index) const noexcept { return get()[index]; }
+  constexpr std::remove_extent_t<T>& operator[](const MemoryIndex index) const noexcept { return this->get()[index]; }
 };
 
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<!std::is_array_v<T>>, typename... Args>

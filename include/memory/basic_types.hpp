@@ -71,17 +71,27 @@ struct MemoryRequirements
 
   // Query API
 
+  // Checks size and alignment
   bool IsBufferValid(const void* const buffer, const MemoryIndex buffer_size) const noexcept;
+
+  // Only checks alignment.
+  bool IsBufferValid(const void* const buffer) const noexcept;
 
   // Allocation API
 
-  template<typename T>
-  static T* Alloc(void*& buffer, const void* const buffer_end, const MemoryIndex element_count = 1u, const MemoryIndex element_alignment = alignof(T)) noexcept
+  template<typename T, typename BufferType>
+  static T* Alloc(BufferType** buffer, const void* const buffer_end, const MemoryIndex element_count = 1u, const MemoryIndex element_alignment = alignof(T)) noexcept
   {
     return static_cast<T*>(Alloc(buffer, buffer_end, sizeof(T), element_count, element_alignment));
   }
 
-  static void* Alloc(void*& buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept;
+  template<typename BufferType>
+  static void* Alloc(BufferType** buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
+  {
+    return Alloc(reinterpret_cast<void**>(buffer), buffer_end, element_size, element_count, element_alignment);
+  }
+
+  static void* Alloc(void** buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept;
 };
 
 template<typename TagType>
