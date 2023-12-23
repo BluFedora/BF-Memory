@@ -21,8 +21,8 @@ namespace Memory
 
   enum class AllocationMarkPolicy : bool
   {
-    UNMARKED,
-    MARK,
+    UNMARKED = false,
+    MARK     = true,
   };
 
   enum class BoundCheckingPolicy : bool
@@ -139,17 +139,23 @@ namespace Memory
       }
 
       const MemoryIndex guard_size = BoundCheckingEnabled ? alignment : 0u;
+      const MemoryIndex total_size = guard_size + guard_size + size + guard_size;
 
       LockPolicy::Lock();
 
-      const MemoryIndex total_size = guard_size + guard_size + size + guard_size;
+      const AllocationResult allocation = static_cast<AllocationState*>(this)->Allocate(total_size, alignment, source_info);
 
-      AllocationResult result = static_cast<AllocationState*>(this)->Allocate(total_size, alignment, source_info);
-
-      if (result)
+      if (allocation)
       {
-        const MemoryIndex extra_bytes       = result.num_bytes - total_size;
-        byte* const       bytes             = static_cast<byte*>(result.ptr);
+        AllocationTrackingPolicy::TrackAllocate(MemoryTrackAllocate{allocation, total_size, alignment, source_info});
+      }
+
+      LockPolicy::Unlock();
+
+      if (allocation)
+      {
+        const MemoryIndex extra_bytes       = allocation.num_bytes - total_size;
+        byte* const       bytes             = static_cast<byte*>(allocation.ptr);
         const MemoryIndex user_memory_size  = size + extra_bytes;
         byte* const       size_header       = bytes;
         byte* const       guard_bytes_front = size_header + guard_size;
@@ -165,14 +171,10 @@ namespace Memory
         MarkAllocatedBytes<MarkPolicy>(mark_bytes, user_memory_size);
         GuardBytes<BoundCheck>(guard_bytes_back, guard_size);
 
-        AllocationTrackingPolicy::TrackAllocate(MemoryTrackAllocate{result, total_size, alignment, source_info});
-
-        result = AllocationResult(mark_bytes, user_memory_size);
+        return AllocationResult(mark_bytes, user_memory_size);
       }
 
-      LockPolicy::Unlock();
-
-      return result;
+      return AllocationResult::Null();
     }
 
     void Deallocate(void* const ptr, const MemoryIndex size, MemoryIndex alignment)

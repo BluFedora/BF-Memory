@@ -44,7 +44,7 @@ using byte = unsigned char;  //!< Type to represent a single byte of memory.
 struct MemoryRequirements
 {
   MemoryIndex size      = 0u;
-  MemoryIndex alignment = 1u;
+  MemoryIndex alignment = alignof(byte);
 
   MemoryRequirements() noexcept = default;
 
@@ -66,7 +66,7 @@ struct MemoryRequirements
   MemoryIndex Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept;
 
   // Only needed if you want to have multiple `MemoryRequirements` sized buffers consecutively in memory.
-  // Call after ypu are done `MemoryRequirements::Append`ing.
+  // Call after you are done `MemoryRequirements::Append`ing.
   void AlignSizeToAlignment() noexcept;
 
   // Query API
@@ -256,26 +256,6 @@ class Allocator : public IAllocator
   }
 
   AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) noexcept
-  {
-    return static_cast<BaseAllocator*>(this)->Allocate(size, alignment, source_info);
-  }
-
-  void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
-  {
-    return static_cast<BaseAllocator*>(this)->Deallocate(ptr, size, alignment);
-  }
-};
-
-template<typename BaseAllocator>
-class Allocator2 : public IAllocator
-{
- public:
-  Allocator2() :
-    IAllocator(IAllocator::BasicAllocatorConvert(static_cast<BaseAllocator&>(*this)))
-  {
-  }
-
-  AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) const noexcept
   {
     return static_cast<BaseAllocator*>(this)->Allocate(size, alignment, source_info);
   }
