@@ -180,7 +180,7 @@ SharedPtr<T> bfMemMakeShared(AllocatorConcept* const allocator, const MemoryInde
 #if IS_CXX20
   return std::allocate_shared<T>(Memory::StlAllocator<T, AllocatorConcept>(*allocator), num_elements);
 #else
- using element_type = std::remove_extent_t<T>;
+  using element_type = std::remove_extent_t<T>;
 
   element_type* const memory = bfMemAllocateArray<element_type, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements, alignof(T));
 
@@ -225,7 +225,7 @@ namespace detail
  *
  *   ```
  *   UniquePtr<byte[]> ptr = ...;
- *   ptr.get_deleter().length(); // This is length of the contained array.
+ *   ptr.length(); // This is length of the contained array.
  *   ```
  *
  * @tparam T
@@ -237,6 +237,8 @@ namespace detail
 template<typename T, typename AllocatorConcept = IAllocator>
 struct UniquePtr : public detail::BaseUniquePtr<T, AllocatorConcept>
 {
+  using element_type = std::remove_extent_t<T>;
+
   using detail::BaseUniquePtr<T, AllocatorConcept>::unique_ptr;
 
   template<typename RhsAllocator>
@@ -246,9 +248,15 @@ struct UniquePtr : public detail::BaseUniquePtr<T, AllocatorConcept>
     static_assert(std::is_convertible_v<RhsAllocator*, AllocatorConcept*>, "Allocator types not convertable.");
   }
 
-  UniquePtr(T* ptr) = delete;
+  UniquePtr(T* const ptr) = delete;
 
-  constexpr std::remove_extent_t<T>& operator[](const MemoryIndex index) const noexcept { return this->get()[index]; }
+  constexpr element_type& operator[](const MemoryIndex index) const noexcept { return this->get()[index]; }
+
+  constexpr element_type*       begin() { return get(); }
+  constexpr element_type*       end() { return get() + length(); }
+  constexpr const element_type* begin() const { return get(); }
+  constexpr const element_type* end() const { return get() + length(); }
+  constexpr MemoryIndex         length() const { return get_deleter().length(); }
 };
 
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<!std::is_array_v<T>>, typename... Args>
