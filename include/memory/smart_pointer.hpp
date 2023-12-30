@@ -206,6 +206,20 @@ SharedPtr<T> bfMemMakeShared(AllocatorConcept* const allocator, const MemoryInde
   return memory ? SharedPtr<T>(memory, std::move(deleter), Memory::StlAllocator<element_type, AllocatorConcept>(*allocator)) : nullptr;
 }
 
+// https://devblogs.microsoft.com/oldnewthing/20230818-00/?p=108619
+
+template<typename T, typename U>
+SharedPtr<T> bfMemMakeSharedAlias(const SharedPtr<U>& owner, T* const ptr)
+{
+  return owner.use_count() != 0 ? SharedPtr<T>(owner, ptr) : nullptr;
+}
+
+template<typename T, typename U>
+SharedPtr<T[]> bfMemMakeSharedAliasArray(const SharedPtr<U>& owner, T* const ptr)
+{
+  return owner.use_count() != 0 ? SharedPtr<T[]>(owner, ptr) : nullptr;
+}
+
 namespace detail
 {
   template<typename T, typename AllocatorConcept>
