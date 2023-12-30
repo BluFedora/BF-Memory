@@ -34,14 +34,11 @@
 // clang-format on
 
 #if BF_MEMORY_ASSERTIONS
-void bfMemAssertImpl(const bool expr, const char* const expr_str, const char* const filename, const int line_number, const char* const assert_msg, ...);
+void bfMemAssertImpl(const char* const expr_str, const char* const filename, const int line_number, const char* const assert_msg, ...);
 
-#define bfMemAssert(expr, msg, ...) ::bfMemAssertImpl((expr), #expr, __FILE__, __LINE__, (msg), ##__VA_ARGS__)
-
-#define memory_constexpr_no_assert inline
+#define bfMemAssert(expr, msg, ...) ((!(expr)) ? ::bfMemAssertImpl(#expr, __FILE__, __LINE__, (msg), ##__VA_ARGS__) : (void)(0) )
 #else
-#define bfMemAssert(expr, msg, ...) bfMemInvariant(expr)
-#define memory_constexpr_no_assert  constexpr
+#define bfMemAssert(expr, ...) bfMemInvariant(expr)
 #endif
 
 #endif  // LIB_FOUNDATION_MEMORY_ASSERTION_HPP

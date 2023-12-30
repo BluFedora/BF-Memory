@@ -34,25 +34,11 @@ namespace Memory
     return alignment > 0 && (alignment & (alignment - 1)) == 0;
   }
 
-  template<MemoryIndex Alignment>
-  constexpr bool IsValidAlignment() noexcept
-  {
-    return IsValidAlignment(Alignment);
-  }
-
-  memory_constexpr_no_assert MemoryIndex IsSizeAligned(const MemoryIndex size, const MemoryIndex alignment) noexcept
+  constexpr MemoryIndex IsSizeAligned(const MemoryIndex size, const MemoryIndex alignment) noexcept
   {
     bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
 
     return (size & (alignment - 1u)) == 0;
-  }
-
-  template<MemoryIndex Alignment>
-  constexpr MemoryIndex IsSizeAligned(const MemoryIndex size) noexcept
-  {
-    static_assert(IsValidAlignment<Alignment>(), "The alignment must be a non-zero power of two less than MaxAlignment.");
-
-    return (size & (Alignment - 1u)) == 0;
   }
 
   /*!
@@ -68,21 +54,11 @@ namespace Memory
    * @return MemoryIndex
    *   The size of the object for the required alignment,
    */
-  memory_constexpr_no_assert MemoryIndex AlignSize(const MemoryIndex size, const MemoryIndex alignment) noexcept
+  constexpr MemoryIndex AlignSize(const MemoryIndex size, const MemoryIndex alignment) noexcept
   {
     bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
 
     const MemoryIndex required_alignment_mask = alignment - 1;
-
-    return size + required_alignment_mask & ~required_alignment_mask;
-  }
-
-  template<MemoryIndex Alignment>
-  constexpr MemoryIndex AlignSize(const MemoryIndex size) noexcept
-  {
-    static_assert(IsValidAlignment<Alignment>(), "The alignment must be a non-zero power of two less than MaxAlignment.");
-
-    const MemoryIndex required_alignment_mask = Alignment - 1;
 
     return size + required_alignment_mask & ~required_alignment_mask;
   }

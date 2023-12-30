@@ -16,20 +16,17 @@
 #include <cstdio>   // vsnprintf, stderr
 #include <cstdlib>  // abort
 
-void bfMemAssertImpl(const bool expr, const char* const expr_str, const char* const filename, const int line_number, const char* const assert_msg, ...)
+void bfMemAssertImpl(const char* const expr_str, const char* const filename, const int line_number, const char* const assert_msg, ...)
 {
-  if (!expr)
-  {
-    char assert_message_buffer[256];
+  char assert_message_buffer[256];
 
-    std::va_list args;
-    va_start(args, assert_msg);
-    std::vsnprintf(assert_message_buffer, sizeof(assert_message_buffer), assert_msg, args);
-    va_end(args);
+  std::va_list args;
+  va_start(args, assert_msg);
+  std::vsnprintf(assert_message_buffer, sizeof(assert_message_buffer), assert_msg, args);
+  va_end(args);
 
-    std::fprintf(stderr, "Memory[%s:%i] Assertion '%s' failed, %s.\n", filename, line_number, expr_str, assert_message_buffer);
-    std::abort();
-  }
+  std::fprintf(stderr, "Memory[%s:%i] Assertion '%s' failed, %s.\n", filename, line_number, expr_str, assert_message_buffer);
+  std::abort();
 }
 
 #endif
