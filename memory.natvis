@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Memory::LinearAllocator">
+    <DisplayString>{ m_Current - m_MemoryBgn } / { m_MemoryEnd - m_MemoryBgn } bytes used</DisplayString>
+    <Expand>
+      <Item Name="[memory total]">m_MemoryEnd - m_MemoryBgn</Item>
+      <Item Name="[memory used]">m_Current - m_MemoryBgn</Item>
+      <Item Name="[memory left]">m_MemoryEnd - m_Current</Item>
+      <Item Name="m_MemoryBgn">m_MemoryBgn</Item>
+      <Item Name="m_Current">m_Current</Item>
+      <Item Name="m_MemoryEnd">m_MemoryEnd</Item>
+    </Expand>
+  </Type>
+</AutoVisualizer>
