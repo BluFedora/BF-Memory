@@ -209,15 +209,15 @@ SharedPtr<T> bfMemMakeShared(AllocatorConcept* const allocator, const MemoryInde
 // https://devblogs.microsoft.com/oldnewthing/20230818-00/?p=108619
 
 template<typename T, typename U>
-SharedPtr<T> bfMemMakeSharedAlias(const SharedPtr<U>& owner, T* const ptr)
+SharedPtr<T> bfMemMakeSharedAlias(SharedPtr<U> owner, T* const ptr)
 {
-  return owner.use_count() != 0 ? SharedPtr<T>(owner, ptr) : nullptr;
+  return owner.use_count() != 0 ? SharedPtr<T>(std::move(owner), ptr) : nullptr;
 }
 
 template<typename T, typename U>
-SharedPtr<T[]> bfMemMakeSharedAliasArray(const SharedPtr<U>& owner, T* const ptr)
+SharedPtr<T[]> bfMemMakeSharedAliasArray(SharedPtr<U> owner, T* const ptr)
 {
-  return owner.use_count() != 0 ? SharedPtr<T[]>(owner, ptr) : nullptr;
+  return owner.use_count() != 0 ? SharedPtr<T[]>(std::move(owner), ptr) : nullptr;
 }
 
 namespace detail
