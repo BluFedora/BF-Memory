@@ -11,11 +11,9 @@
 
 #if !BF_MEMORY_NO_DEFAULT_HEAP
 
-#include "memory/memory_manager.hpp"
+#include "memory/memory_manager.hpp"  // MemoryManager
 
-#include <new>
-
-#include <cstdio>
+#include <new>  // align_val_t, nothrow
 
 struct CxxFreeStoreAllocator
 {
@@ -33,21 +31,16 @@ struct CxxFreeStoreAllocator
 };
 
 template<Memory::AllocationMarkPolicy MarkPolicy, Memory::BoundCheckingPolicy BoundCheck>
-using BaseDefaultCRTHeap = Memory::MemoryManager<
- CxxFreeStoreAllocator,
- MarkPolicy,
- BoundCheck,
- Memory::NoMemoryTracking,
- Memory::NoLock>;
+using BaseDefaultHeap = Memory::MemoryManager<CxxFreeStoreAllocator, MarkPolicy, BoundCheck, Memory::NoMemoryTracking, Memory::NoLock>;
 
 #if BF_MEMORY_DEBUG_HEAP
-using DefaultCRTHeap = BaseDefaultCRTHeap<Memory::AllocationMarkPolicy::MARK, Memory::BoundCheckingPolicy::CHECKED>;
+using DefaultHeap = BaseDefaultHeap<Memory::AllocationMarkPolicy::MARK, Memory::BoundCheckingPolicy::CHECKED>;
 #else
-using DefaultCRTHeap = BaseDefaultCRTHeap<Memory::AllocationMarkPolicy::UNMARKED, Memory::BoundCheckingPolicy::UNCHECKED>;
+using DefaultHeap = BaseDefaultHeap<Memory::AllocationMarkPolicy::UNMARKED, Memory::BoundCheckingPolicy::UNCHECKED>;
 #endif
 
-static DefaultCRTHeap s_DefaultHeapImpl = {};
-static IAllocator      s_DefaultHeap     = s_DefaultHeapImpl;
+static DefaultHeap s_DefaultHeapImpl = {};
+static IAllocator  s_DefaultHeap     = s_DefaultHeapImpl;
 
 IAllocator& Memory::DefaultHeap() noexcept
 {

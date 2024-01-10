@@ -19,14 +19,14 @@
 namespace Memory
 {
 #if defined(__STDCPP_DEFAULT_NEW_ALIGNMENT__)
-  static constexpr MemoryIndex DefaultNewAlignment = __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+  static constexpr MemoryIndex DefaultNewAlignment = __STDCPP_DEFAULT_NEW_ALIGNMENT__; //!< The alignment a pointer from new will have.
 #else
-  static constexpr MemoryIndex DefaultNewAlignment = alignof(std::max_align_t);
+  static constexpr MemoryIndex DefaultNewAlignment = alignof(std::max_align_t); //!< The alignment a pointer from new will have.
 #endif
 
-  static constexpr MemoryIndex DefaultMallocAlignment = alignof(std::max_align_t);
+  static constexpr MemoryIndex DefaultMallocAlignment = alignof(std::max_align_t); //!< The alignment a pointer from malloc will have.
 
-  static constexpr MemoryIndex DefaultAlignment = DefaultMallocAlignment < DefaultNewAlignment ? DefaultNewAlignment : DefaultMallocAlignment;
+  static constexpr MemoryIndex DefaultAlignment = DefaultMallocAlignment < DefaultNewAlignment ? DefaultNewAlignment : DefaultMallocAlignment; //!< An address aligned to this value can support any non-overaligned datatype.
 
   // Alignment must be a non-zero power of two.
   constexpr bool IsValidAlignment(const MemoryIndex alignment) noexcept

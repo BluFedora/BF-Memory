@@ -11,6 +11,13 @@ Memory::LinearAllocator::LinearAllocator(byte* const memory_block, const MemoryI
 {
 }
 
+void Memory::LinearAllocator::Init(byte* const memory_block, const MemoryIndex memory_block_size)
+{
+  m_MemoryBgn = memory_block;
+  m_MemoryEnd = memory_block + memory_block_size;
+  m_Current   = memory_block;
+}
+
 bool Memory::LinearAllocator::CanServiceAllocation(const MemoryIndex size, const MemoryIndex alignment) const noexcept
 {
   const void* const aligned_ptr = AlignPointer(m_Current, alignment);

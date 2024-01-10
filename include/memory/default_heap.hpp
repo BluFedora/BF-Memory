@@ -14,11 +14,11 @@
 #include "basic_types.hpp"
 
 #ifndef BF_MEMORY_NO_DEFAULT_HEAP
-#define BF_MEMORY_NO_DEFAULT_HEAP 0  //!< Disables the default heap.
+#define BF_MEMORY_NO_DEFAULT_HEAP 0  //!< Disables the default heap, can be implmented by a user defined translation unit.
 #endif
 
 #ifndef BF_MEMORY_DEBUG_HEAP
-#define BF_MEMORY_DEBUG_HEAP 1 //!< The default heap allocator will have minor additional checks.
+#define BF_MEMORY_DEBUG_HEAP 1 //!< The default heap allocator will have debug checks.
 #endif
 
 namespace Memory

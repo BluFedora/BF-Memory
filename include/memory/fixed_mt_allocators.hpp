@@ -25,10 +25,6 @@ namespace Memory
    * @brief
    *   This allocator is very good for temporary scoped memory allocations.
    *   There is no individual deallocation but a whole clear operation.
-   *
-   *   NOTE(SR):
-         m_Current may go past m_MemoryEnd by design, so that only a single
-         atomic operation happens in Allocate.
    */
   class ConcurrentLinearAllocator
   {
@@ -38,7 +34,7 @@ namespace Memory
 
    private:
     byte* const        m_MemoryBgn;
-    const byte* const  m_MemoryEnd;
+    byte* const        m_MemoryEnd;
     std::atomic<byte*> m_Current;
 
    public:

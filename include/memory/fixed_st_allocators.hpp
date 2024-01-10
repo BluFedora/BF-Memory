@@ -30,13 +30,18 @@ namespace Memory
     friend class LinearAllocatorSavePoint;
 
    private:
-    byte* const       m_MemoryBgn;
-    const byte* const m_MemoryEnd;
-    byte*             m_Current;
+    byte*       m_MemoryBgn;
+    const byte* m_MemoryEnd;
+    byte*       m_Current;
 
    public:
+    LinearAllocator() = default;
     LinearAllocator(byte* const memory_block, const MemoryIndex memory_block_size) noexcept;
 
+    MemoryIndex UsedMemory() const { return m_Current - m_MemoryBgn; }
+    MemoryIndex TotalMemory() const { return m_MemoryEnd - m_MemoryBgn; }
+
+    void             Init(byte* const memory_block, const MemoryIndex memory_block_size);
     void             Clear() noexcept { m_Current = m_MemoryBgn; }
     bool             CanServiceAllocation(const MemoryIndex size, const MemoryIndex alignment) const noexcept;
     AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info  */) noexcept;

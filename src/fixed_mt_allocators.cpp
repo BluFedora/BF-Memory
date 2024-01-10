@@ -24,6 +24,8 @@ AllocationResult Memory::ConcurrentLinearAllocator::Allocate(const MemoryIndex s
     return AllocationResult{aligned_ptr, allocated_size};
   }
 
+  // Don't want to wrap around after many failed allocations.
+  m_Current.store(m_MemoryEnd);
   return AllocationResult::Null();
 }
 
