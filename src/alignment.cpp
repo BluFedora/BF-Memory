@@ -61,11 +61,16 @@ void* Memory::StandardAlign(const size_t alignment, const size_t size, void** pt
 
 MemoryIndex MemoryRequirements::Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
 {
-  // TODO(SR): Check for overflow?
+  const MemoryIndex allocation_size = element_size * element_count; // TODO(SR): Check for overflow?
+
+  if (!allocation_size)
+  {
+    return size;
+  }
 
   const MemoryIndex allocation_offset = Memory::AlignSize(size, element_alignment);
 
-  size      = allocation_offset + element_size * element_count;
+  size      = allocation_offset + allocation_size;
   alignment = (element_alignment > alignment) ? element_alignment : alignment;
 
   return allocation_offset;
@@ -88,9 +93,16 @@ bool MemoryRequirements::IsBufferValid(const void* const buffer) const noexcept
 
 void* MemoryRequirements::Alloc(void** buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
 {
+  const MemoryIndex allocation_size = element_size * element_count; // TODO(SR): Check for overflow?
+
+  if (!allocation_size)
+  {
+    return nullptr;
+  }
+
   byte* const result = static_cast<byte*>(Memory::AlignPointer(*buffer, element_alignment));
 
-  *buffer = result + element_size * element_count;
+  *buffer = result + allocation_size;
 
   bfMemAssert(*buffer <= buffer_end, "Not enough space in buffer, incorrect buffer size for the MemoryRequirements passed in.");
 

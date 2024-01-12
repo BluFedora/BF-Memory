@@ -46,9 +46,9 @@ struct MemoryRequirements
   MemoryIndex size      = 0u;
   MemoryIndex alignment = alignof(byte);
 
-  MemoryRequirements() noexcept = default;
+  constexpr MemoryRequirements() noexcept = default;
 
-  MemoryRequirements(const MemoryIndex size, const MemoryIndex alignment) noexcept :
+  constexpr MemoryRequirements(const MemoryIndex size, const MemoryIndex alignment) noexcept :
     size{size},
     alignment{alignment}
   {
