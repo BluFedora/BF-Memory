@@ -28,12 +28,34 @@ namespace Memory
 
   static constexpr MemoryIndex DefaultAlignment = DefaultMallocAlignment < DefaultNewAlignment ? DefaultNewAlignment : DefaultMallocAlignment; //!< An address aligned to this value can support any non-overaligned datatype.
 
-  // Alignment must be a non-zero power of two.
+  /*!
+   * @brief
+   *   Returns if \p alignment is valid to be used for alignment of memory addresses.
+   * 
+   * @param alignment
+   *   The value to be checking.
+   * 
+   * @return
+   *   true of \p alignment is a non-zero power of two.
+  */
   constexpr bool IsValidAlignment(const MemoryIndex alignment) noexcept
   {
     return alignment > 0 && (alignment & (alignment - 1)) == 0;
   }
 
+  /*!
+   * @brief
+   *   returns if \p size is a multiple of \p alignment.
+   * 
+   * @param size
+   *   The size to be checking.
+   * 
+   * @param alignment
+   *   Must be a non-zero power of two.
+   * 
+   * @return
+   *   true if \p size is aligned to \p alignment, false otherwise.
+  */
   constexpr MemoryIndex IsSizeAligned(const MemoryIndex size, const MemoryIndex alignment) noexcept
   {
     bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
@@ -98,7 +120,7 @@ namespace Memory
 
   /*!
    * @brief
-   *   Implements "std::align" but in C.
+   *   Implements "std::align" but in a C compatible way.
    *   `size` must be <= *space or this functions will always fail.
    *
    * @param[in] alignment

@@ -10,7 +10,7 @@
 /******************************************************************************/
 #include "memory/alignment.hpp"
 
-#include <cstdint>  // uintptr_t
+#include <cstdint>  // uintptr_t, ptrdiff_t
 
 bool Memory::IsPointerAligned(const void* const ptr, const MemoryIndex alignment) noexcept
 {
@@ -31,7 +31,7 @@ void* Memory::AlignPointer(const void* const ptr, const MemoryIndex alignment) n
 MemoryIndex Memory::PointerAlignOffset(const void* const ptr, const MemoryIndex alignment) noexcept
 {
   const void* const aligned_ptr = Memory::AlignPointer(ptr, alignment);
-  return static_cast<const unsigned char*>(aligned_ptr) - static_cast<const unsigned char*>(ptr);
+  return static_cast<const byte*>(aligned_ptr) - static_cast<const byte*>(ptr);
 }
 
 /*
@@ -45,8 +45,8 @@ void* Memory::StandardAlign(const size_t alignment, const size_t size, void** pt
   bfMemAssert(ptr != NULL, "Passed in pointer must not be null.");
   bfMemAssert(space != NULL, "Passed in space must not be null.");
 
-  void* const     aligned_ptr = Memory::AlignPointer(*ptr, alignment);
-  const uintptr_t offset      = (char*)aligned_ptr - (char*)*ptr;
+  void* const          aligned_ptr = Memory::AlignPointer(*ptr, alignment);
+  const std::ptrdiff_t offset      = (char*)aligned_ptr - (char*)*ptr;
 
   if (*space >= (size + offset))
   {
@@ -61,7 +61,7 @@ void* Memory::StandardAlign(const size_t alignment, const size_t size, void** pt
 
 MemoryIndex MemoryRequirements::Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
 {
-  const MemoryIndex allocation_size = element_size * element_count; // TODO(SR): Check for overflow?
+  const MemoryIndex allocation_size = element_size * element_count;  // TODO(SR): Check for overflow?
 
   if (!allocation_size)
   {
@@ -93,7 +93,7 @@ bool MemoryRequirements::IsBufferValid(const void* const buffer) const noexcept
 
 void* MemoryRequirements::Alloc(void** buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
 {
-  const MemoryIndex allocation_size = element_size * element_count; // TODO(SR): Check for overflow?
+  const MemoryIndex allocation_size = element_size * element_count;  // TODO(SR): Check for overflow?
 
   if (!allocation_size)
   {

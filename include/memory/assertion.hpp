@@ -36,7 +36,7 @@
 #if BF_MEMORY_ASSERTIONS
 void bfMemAssertImpl(const char* const expr_str, const char* const filename, const int line_number, const char* const assert_msg, ...);
 
-#define bfMemAssert(expr, msg, ...) ((!(expr)) ? ::bfMemAssertImpl(#expr, __FILE__, __LINE__, (msg), ##__VA_ARGS__) : (void)(0) )
+#define bfMemAssert(expr, msg, ...) ((!(expr)) ? ::bfMemAssertImpl(#expr, __FILE__, __LINE__, (msg), ##__VA_ARGS__) : (void)(0))
 #else
 #define bfMemAssert(expr, ...) bfMemInvariant(expr)
 #endif
