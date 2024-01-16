@@ -266,11 +266,11 @@ struct UniquePtr : public detail::BaseUniquePtr<T, AllocatorConcept>
 
   constexpr element_type& operator[](const MemoryIndex index) const noexcept { return this->get()[index]; }
 
-  constexpr element_type*       begin() { return get(); }
-  constexpr element_type*       end() { return get() + length(); }
-  constexpr const element_type* begin() const { return get(); }
-  constexpr const element_type* end() const { return get() + length(); }
-  constexpr MemoryIndex         length() const { return get_deleter().length(); }
+  constexpr element_type*       begin() { return this->get(); }
+  constexpr element_type*       end() { return this->get() + length(); }
+  constexpr const element_type* begin() const { return this->get(); }
+  constexpr const element_type* end() const { return this->get() + length(); }
+  constexpr MemoryIndex         length() const { return this->get_deleter().length(); }
 };
 
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<!std::is_array_v<T>>, typename... Args>
