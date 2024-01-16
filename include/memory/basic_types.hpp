@@ -65,6 +65,11 @@ struct MemoryRequirements
   // Returns the offset in the buffer that this element(s) would be located at.
   MemoryIndex Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept;
 
+  MemoryIndex Append(const MemoryRequirements mem_reqs, const MemoryIndex element_count = 1u) noexcept
+  {
+    return Append(mem_reqs.size, element_count, mem_reqs.alignment);
+  }
+
   // Only needed if you want to have multiple `MemoryRequirements` sized buffers consecutively in memory.
   // Call after you are done `MemoryRequirements::Append`ing.
   void AlignSizeToAlignment() noexcept;
