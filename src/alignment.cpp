@@ -39,7 +39,7 @@ MemoryIndex Memory::PointerAlignOffset(const void* const ptr, const MemoryIndex 
     [https://github.com/KabukiStarship/KabukiToolkit/wiki/Fastest-Method-to-Align-Pointers#21-proof-by-example]
     [https://stackoverflow.com/a/51585463]
 */
-void* Memory::StandardAlign(const size_t alignment, const size_t size, void** ptr, size_t* space) noexcept
+void* Memory::StandardAlign(const MemoryIndex alignment, const MemoryIndex size, void** ptr, MemoryIndex* space) noexcept
 {
   bfMemAssert(alignment > 0 && (alignment & (alignment - 1)) == 0, "The alignment must be a non-zero power of two.");
   bfMemAssert(ptr != NULL, "Passed in pointer must not be null.");

@@ -41,6 +41,8 @@ AllocationResult Memory::LinearAllocator::Allocate(const MemoryIndex size, const
 
 void Memory::LinearAllocator::Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
 {
+  (void)alignment;
+
   const byte* const ptr_end = static_cast<const byte*>(ptr) + size;
 
   if (ptr_end == m_Current)
@@ -119,6 +121,8 @@ AllocationResult Memory::StackAllocator::Allocate(const MemoryIndex size, const 
 
 void Memory::StackAllocator::Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
 {
+  (void)alignment;
+
   const StackAllocatorHeader header = Stack::ReadHeader(reinterpret_cast<byte*>(ptr) - sizeof(StackAllocatorHeader));
 
   bfMemAssert(header.num_bytes == size, "Incorrect number of bytes passed in.");

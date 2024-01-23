@@ -13,12 +13,12 @@
 
 #include "basic_types.hpp"  // byte, AllocationResult
 
-#include <atomic>  //std::atomic<T*>
+#include <atomic>  // std::atomic<T*>
 
 namespace Memory
 {
   //-------------------------------------------------------------------------------------//
-  // Linear Allocator
+  // Concurrent Linear Allocator
   //-------------------------------------------------------------------------------------//
 
   /*!
@@ -28,8 +28,6 @@ namespace Memory
    */
   class ConcurrentLinearAllocator
   {
-    friend class LinearAllocatorSavePoint;
-
     static_assert(std::atomic<byte*>::is_always_lock_free, "Atomic pointer expected to be lock-free.");
 
    private:

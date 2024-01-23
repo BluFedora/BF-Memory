@@ -1,8 +1,9 @@
 /******************************************************************************/
 /*!
- * @file   default_heap.hpp
+ * @file   default_heap.cpp
  * @author Shareef Raheem (https://blufedora.github.io/)
  * @brief
+ *    The default global thread-safe heap allocator.
  *
  * @copyright Copyright (c) 2023 Shareef Abdoul-Raheem
  */
@@ -19,6 +20,8 @@ struct CxxFreeStoreAllocator
 {
   AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) const noexcept
   {
+    (void)source_info;
+
     void* const ptr = ::operator new(size, std::align_val_t{alignment}, std::nothrow);
 
     return ptr ? AllocationResult{ptr, size} : AllocationResult::Null();

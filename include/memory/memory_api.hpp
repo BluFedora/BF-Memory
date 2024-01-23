@@ -11,14 +11,13 @@
 #ifndef LibFoundation_Memory_API_HPP
 #define LibFoundation_Memory_API_HPP
 
-#include "memory/allocation.hpp" // Allocation API
+#include "memory/allocation.hpp"  // Allocation API
 
 #include "memory/alignment.hpp"  // AlignPointer
 
-#include <cstddef>  // size_t, max_align_t
-#include <memory>   // uninitialized_default_construct, uninitialized_value_construct
-#include <new>      // placement new
-#include <utility>  // forward, move
+#include <iterator>     // make_reverse_iterator
+#include <memory>       // uninitialized_default_construct, uninitialized_value_construct, uninitialized_move
+#include <type_traits>  // is_trivially_destructible_v
 
 namespace bf
 {

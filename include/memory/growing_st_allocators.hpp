@@ -11,9 +11,7 @@
 #ifndef LIB_FOUNDATION_MEMORY_GROWING_ST_ALLOCATORS_HPP
 #define LIB_FOUNDATION_MEMORY_GROWING_ST_ALLOCATORS_HPP
 
-// #include "fixed_st_allocators.hpp"
-
-#include "basic_types.hpp" // IAllocator, MemoryIndex
+#include "basic_types.hpp"  // IAllocator, MemoryIndex
 
 namespace Memory
 {
@@ -57,7 +55,6 @@ namespace Memory
     operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
 
-  // TODO(SR): This should ustilize the fact that the constants are known at compile time and have a completely separate implementation.
   template<MemoryIndex BlockSize, MemoryIndex BlockAlignment, MemoryIndex NumBlocksPerChunk>
   class StaticGrowingPoolAllocator : public GrowingPoolAllocator
   {

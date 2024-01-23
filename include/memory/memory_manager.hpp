@@ -102,8 +102,8 @@ namespace Memory
 
   struct NoMemoryTracking
   {
-    void TrackAllocate(const MemoryTrackAllocate& allocate_info) const noexcept {}
-    void TrackDeallocate(const MemoryTrackDeallocate& deallocate_info) const noexcept {}
+    void TrackAllocate(const Memory::MemoryTrackAllocate& allocate_info) const noexcept { (void)allocate_info; }
+    void TrackDeallocate(const Memory::MemoryTrackDeallocate& deallocate_info) const noexcept { (void)deallocate_info; }
   };
 
   template<typename AllocationState,

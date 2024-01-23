@@ -13,6 +13,9 @@
 
 #include "basic_types.hpp"  // AllocationResult, MemoryIndex, AllocationSourceInfo, MemoryMakeAllocationSourceInfo
 
+#include <utility>  // forward
+#include <new>      // placement new
+
 namespace Memory
 {
   /*!
@@ -35,7 +38,7 @@ namespace Memory
     NONE,      //!< Memory is left alone.
     DESTRUCT,  //!< Will destruct the memory to type `T`.
   };
-}
+}  // namespace Memory
 
 //-------------------------------------------------------------------------------------//
 // Base Allocation API: The functions that all other allocation functions are built on.
@@ -261,7 +264,7 @@ void bfMemDeallocateObject(AllocatorConcept&& allocator, T* const ptr)
 
 //
 
-#include <memory> // uninitialized_default_construct, uninitialized_value_construct
+#include <memory>  // uninitialized_default_construct, uninitialized_value_construct
 
 template<typename T, Memory::ArrayConstruct init>
 T* bfMemArrayConstruct(const AllocationResult mem_block, const MemoryIndex num_elements)

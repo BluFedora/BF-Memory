@@ -143,7 +143,7 @@ namespace Memory
    *   `ptr` is we can fit an aligned `size` into `space`,
    *   otherwise NULL is returned.
    */
-  void* StandardAlign(const size_t alignment, const size_t size, void** ptr, size_t* space) noexcept;
+  void* StandardAlign(const MemoryIndex alignment, const MemoryIndex size, void** ptr, MemoryIndex* space) noexcept;
 }  // namespace Memory
 
 #endif  // LIB_FOUNDATION_MEMORY_ALIGHNMENT_HPP

@@ -11,11 +11,12 @@ Memory::ConcurrentLinearAllocator::ConcurrentLinearAllocator(byte* const memory_
 
 AllocationResult Memory::ConcurrentLinearAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo&) noexcept
 {
-  const MemoryIndex required_size = size + (alignment - 1);
-  byte* const       ptr           = m_Current.fetch_add(required_size);
-  byte* const       aligned_ptr   = static_cast<byte*>(AlignPointer(ptr, alignment));
+  const MemoryIndex required_size   = size + (alignment - 1);
+  byte* const       ptr             = m_Current.fetch_add(required_size);
+  byte* const       aligned_ptr     = static_cast<byte*>(AlignPointer(ptr, alignment));
+  const byte* const aligned_ptr_end = aligned_ptr + size;
 
-  if ((aligned_ptr + size) <= m_MemoryEnd)
+  if (aligned_ptr_end <= m_MemoryEnd)
   {
     const byte* const ptr_end         = ptr + required_size;
     const byte* const clamped_ptr_end = ptr_end < m_MemoryEnd ? ptr_end : m_MemoryEnd;

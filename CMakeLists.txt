@@ -1,9 +1,5 @@
 ﻿################################################################################
-#                                                                              #
-#                              BF MEMORY PROJECT                               #
-#                                                                              #
-################################################################################
-###         Polymorphic Memory Allocator Library For C++17 and above.        ###
+### BF Memory: Polymorphic Memory Allocator Library For C++17 and above.     ###
 ################################################################################
 
 cmake_minimum_required(VERSION 3.12)
@@ -50,4 +46,19 @@ target_compile_features(
     cxx_std_17
 )
 
-set_property(TARGET LibFoundation_Memory PROPERTY FOLDER "BluFedora/Foundation")
+set_target_properties(
+  LibFoundation_Memory
+  PROPERTIES
+    FOLDER                   "BluFedora/Foundation"
+    CXX_STANDARD             17
+    CXX_STANDARD_REQUIRED    on
+    CXX_EXTENSIONS           off
+    COMPILE_WARNING_AS_ERROR on
+)
+
+target_compile_options(
+  LibFoundation_Memory
+  PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4> # /WX
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic> # -Werror
+)

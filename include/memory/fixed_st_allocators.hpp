@@ -44,7 +44,7 @@ namespace Memory
     void             Init(byte* const memory_block, const MemoryIndex memory_block_size);
     void             Clear() noexcept { m_Current = m_MemoryBgn; }
     bool             CanServiceAllocation(const MemoryIndex size, const MemoryIndex alignment) const noexcept;
-    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info  */) noexcept;
+    AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info */) noexcept;
     void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
 
     operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }

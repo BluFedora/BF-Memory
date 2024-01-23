@@ -3,7 +3,7 @@
  * @file   default_heap.hpp
  * @author Shareef Raheem (https://blufedora.github.io/)
  * @brief
- *    The default heap allocator is guaranteed to be thread-safe.
+ *    The default global thread-safe heap allocator.
  * 
  * @copyright Copyright (c) 2023 Shareef Abdoul-Raheem
  */
