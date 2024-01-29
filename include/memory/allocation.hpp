@@ -13,8 +13,8 @@
 
 #include "basic_types.hpp"  // AllocationResult, MemoryIndex, AllocationSourceInfo, MemoryMakeAllocationSourceInfo
 
-#include <utility>  // forward
 #include <new>      // placement new
+#include <utility>  // forward
 
 namespace Memory
 {
@@ -101,7 +101,7 @@ void bfMemDeallocate(AllocatorConcept&& allocator, void* const ptr, const Memory
 }
 
 //-------------------------------------------------------------------------------------//
-// Single Object API: Calls constructor and destructors on the allcoated memory.
+// Single Object API: Calls constructor and destructors on the allocated memory.
 //-------------------------------------------------------------------------------------//
 
 /*!
@@ -125,7 +125,12 @@ void bfMemDeallocate(AllocatorConcept&& allocator, void* const ptr, const Memory
  *   On Failure: nullptr.
  */
 template<typename T, typename AllocatorConcept, typename... Args>
-T* bfMemAllocateObject(AllocatorConcept&& allocator, Args&&... args);
+T* bfMemAllocateObject(AllocatorConcept&& allocator, Args&&... args)
+{
+  const AllocationResult mem_block = bfMemAllocate(allocator, sizeof(T), alignof(T));
+
+  return mem_block ? new (mem_block.ptr) T(std::forward<Args>(args)...) : nullptr;
+}
 
 /*!
  * @brief
@@ -140,7 +145,14 @@ T* bfMemAllocateObject(AllocatorConcept&& allocator, Args&&... args);
  * @param ptr
  */
 template<typename T, typename AllocatorConcept>
-void bfMemDeallocateObject(AllocatorConcept&& allocator, T* const ptr);
+void bfMemDeallocateObject(AllocatorConcept&& allocator, T* const ptr)
+{
+  if (ptr)
+  {
+    ptr->~T();
+    bfMemDeallocate(allocator, ptr, sizeof(T), alignof(T));
+  }
+}
 
 //-------------------------------------------------------------------------------------//
 // Array API:
@@ -216,8 +228,8 @@ T* bfMemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elemen
  *
  * @see bfMemAllocateArray
  */
-template<Memory::ArrayDestruct destroy = Memory::ArrayDestruct::NONE, typename T>
-void bfMemDeallocateArray(const IAllocator allocator, T* const array, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T));
+template<Memory::ArrayDestruct destroy = Memory::ArrayDestruct::NONE, typename T, typename AllocatorConcept>
+void bfMemDeallocateArray(AllocatorConcept&& allocator, T* const array, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T));
 
 //-------------------------------------------------------------------------------------//
 // Templated Function Implementations
@@ -231,9 +243,8 @@ T* bfMemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elemen
   return bfMemArrayConstruct<T, init>(mem_block, num_elements);
 }
 
-// TODO(SR): Take in templated `AllocatorConcept`.
-template<Memory::ArrayDestruct destroy, typename T>
-void bfMemDeallocateArray(const IAllocator allocator, T* const array, const MemoryIndex num_elements, const MemoryIndex alignment)
+template<Memory::ArrayDestruct destroy, typename T, typename AllocatorConcept>
+void bfMemDeallocateArray(AllocatorConcept&& allocator, T* const array, const MemoryIndex num_elements, const MemoryIndex alignment)
 {
   if (array && num_elements)
   {
@@ -242,27 +253,6 @@ void bfMemDeallocateArray(const IAllocator allocator, T* const array, const Memo
   }
 }
 
-//
-
-template<typename T, typename AllocatorConcept, typename... Args>
-T* bfMemAllocateObject(AllocatorConcept&& allocator, Args&&... args)
-{
-  const AllocationResult mem_block = bfMemAllocate(allocator, sizeof(T), alignof(T));
-
-  return mem_block ? new (mem_block.ptr) T(std::forward<Args>(args)...) : nullptr;
-}
-
-template<typename T, typename AllocatorConcept>
-void bfMemDeallocateObject(AllocatorConcept&& allocator, T* const ptr)
-{
-  if (ptr)
-  {
-    ptr->~T();
-    bfMemDeallocate(allocator, ptr, sizeof(T), alignof(T));
-  }
-}
-
-//
 
 #include <memory>  // uninitialized_default_construct, uninitialized_value_construct
 
