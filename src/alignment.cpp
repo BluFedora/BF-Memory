@@ -5,7 +5,7 @@
  * @brief
  *   Utilities for handling alignment of memory allocations.
  *
- * @copyright Copyright (c) 2023 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2023-2024 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #include "memory/alignment.hpp"
@@ -113,7 +113,7 @@ void* MemoryRequirements::Alloc(void** buffer, const void* const buffer_end, con
 /*
   MIT License
 
-  Copyright (c) 2023 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2024 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

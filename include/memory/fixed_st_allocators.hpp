@@ -5,7 +5,7 @@
  * @brief
  *   Contains non-growing single threaded allocators.
  *
- * @copyright Copyright (c) 2023 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2023-2024 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef LIB_FOUNDATION_MEMORY_FIXED_ST_ALLOCATORS_HPP
@@ -49,6 +49,12 @@ namespace Memory
 
     operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
+
+  inline LinearAllocator LinearAllocatorFromMemoryRequirements(void* const buffer, const MemoryRequirements mem_reqs)
+  {
+    bfMemAssert(mem_reqs.IsBufferValid(buffer), "Buffer improperly aligned.");
+    return Memory::LinearAllocator{reinterpret_cast<byte*>(buffer), mem_reqs.size};
+  }
 
   /*!
    * @copydoc LinearAllocator
@@ -240,7 +246,7 @@ namespace Memory
 /*
   MIT License
 
-  Copyright (c) 2023 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2024 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

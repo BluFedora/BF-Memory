@@ -38,6 +38,34 @@ namespace Memory
     NONE,      //!< Memory is left alone.
     DESTRUCT,  //!< Will destruct the memory to type `T`.
   };
+
+  template<typename T>
+  constexpr void DefaultConstructRange(T* const range_bgn, const T* const range_end)
+  {
+    for (T* element = range_bgn; element != range_end; ++element)
+    {
+      new (element) T();
+    }
+  }
+
+  template<typename T>
+  constexpr void ValueConstructRange(T* const range_bgn, const T* const range_end)
+  {
+    for (T* element = range_bgn; element != range_end; ++element)
+    {
+      new (element) T;
+    }
+  }
+
+  template<typename T>
+  constexpr void DestructRange(T* const range_bgn, const T* const range_end)
+  {
+    for (T* element = range_bgn; element != range_end; ++element)
+    {
+      element->~T();
+    }
+  }
+
 }  // namespace Memory
 
 //-------------------------------------------------------------------------------------//
@@ -207,7 +235,12 @@ void bfMemDestructArray(T* const array_bgn, const T* const array_end);
  * @see Memory::ArrayConstruct
  */
 template<typename T, Memory::ArrayConstruct init = Memory::ArrayConstruct::UNINITIALIZE, typename AllocatorConcept>
-T* bfMemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T), const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg());
+T* bfMemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T), const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg())
+{
+  const AllocationResult mem_block = (bfMemAllocate)(allocator, sizeof(T) * num_elements, alignment, source_info);
+
+  return bfMemArrayConstruct<T, init>(mem_block, num_elements);
+}
 
 /*!
  * @brief
@@ -229,22 +262,7 @@ T* bfMemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elemen
  * @see bfMemAllocateArray
  */
 template<Memory::ArrayDestruct destroy = Memory::ArrayDestruct::NONE, typename T, typename AllocatorConcept>
-void bfMemDeallocateArray(AllocatorConcept&& allocator, T* const array, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T));
-
-//-------------------------------------------------------------------------------------//
-// Templated Function Implementations
-//-------------------------------------------------------------------------------------//
-
-template<typename T, Memory::ArrayConstruct init, typename AllocatorConcept>
-T* bfMemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elements, const MemoryIndex alignment, const AllocationSourceInfo& source_info)
-{
-  const AllocationResult mem_block = (bfMemAllocate)(allocator, sizeof(T) * num_elements, alignment, source_info);
-
-  return bfMemArrayConstruct<T, init>(mem_block, num_elements);
-}
-
-template<Memory::ArrayDestruct destroy, typename T, typename AllocatorConcept>
-void bfMemDeallocateArray(AllocatorConcept&& allocator, T* const array, const MemoryIndex num_elements, const MemoryIndex alignment)
+void bfMemDeallocateArray(AllocatorConcept&& allocator, T* const array, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T))
 {
   if (array && num_elements)
   {
@@ -253,6 +271,9 @@ void bfMemDeallocateArray(AllocatorConcept&& allocator, T* const array, const Me
   }
 }
 
+//-------------------------------------------------------------------------------------//
+// Templated Function Implementations
+//-------------------------------------------------------------------------------------//
 
 #include <memory>  // uninitialized_default_construct, uninitialized_value_construct
 
@@ -284,11 +305,7 @@ void bfMemDestructArray(T* const array_bgn, const T* const array_end)
 {
   if constexpr (destroy == Memory::ArrayDestruct::DESTRUCT)
   {
-    // TODO(SR): Handle exceptions thrown in destructor.
-    for (T* element = array_bgn; element < array_end; ++element)
-    {
-      element->~T();
-    }
+    Memory::DestructRange(array_bgn, array_end);
   }
 }
 

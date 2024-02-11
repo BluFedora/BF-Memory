@@ -27,13 +27,16 @@ bool Memory::LinearAllocator::CanServiceAllocation(const MemoryIndex size, const
 
 AllocationResult Memory::LinearAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo&) noexcept
 {
-  void* const aligned_ptr     = AlignPointer(m_Current, alignment);
-  byte* const aligned_ptr_end = static_cast<byte*>(aligned_ptr) + size;
-
-  if (aligned_ptr_end <= m_MemoryEnd)
+  if (size != 0u)
   {
-    m_Current = aligned_ptr_end;
-    return AllocationResult(aligned_ptr, size);
+    void* const aligned_ptr     = AlignPointer(m_Current, alignment);
+    byte* const aligned_ptr_end = static_cast<byte*>(aligned_ptr) + size;
+
+    if (aligned_ptr_end <= m_MemoryEnd)
+    {
+      m_Current = aligned_ptr_end;
+      return AllocationResult(aligned_ptr, size);
+    }
   }
 
   return AllocationResult::Null();
