@@ -5,7 +5,7 @@
  * @brief
  *   Main allocation interface.
  *
- * @copyright Copyright (c) 2023 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2023-2024 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef LIB_FOUNDATION_MEMORY_ALLOCATION_HPP
@@ -29,27 +29,8 @@ namespace Memory
     VALUE_CONSTRUCT,    //!< Will default construct the memory to its default value, typically zeroed for trivial types.
   };
 
-  /*!
-   * @brief
-   *   Describes the way memory should be destroyed.
-   */
-  enum class ArrayDestruct
-  {
-    NONE,      //!< Memory is left alone.
-    DESTRUCT,  //!< Will destruct the memory to type `T`.
-  };
-
   template<typename T>
   constexpr void DefaultConstructRange(T* const range_bgn, const T* const range_end)
-  {
-    for (T* element = range_bgn; element != range_end; ++element)
-    {
-      new (element) T();
-    }
-  }
-
-  template<typename T>
-  constexpr void ValueConstructRange(T* const range_bgn, const T* const range_end)
   {
     for (T* element = range_bgn; element != range_end; ++element)
     {
@@ -58,11 +39,26 @@ namespace Memory
   }
 
   template<typename T>
+  constexpr void ValueConstructRange(T* const range_bgn, const T* const range_end)
+  {
+    for (T* element = range_bgn; element != range_end; ++element)
+    {
+      new (element) T();
+    }
+  }
+
+  template<typename T>
+  constexpr void Destruct(T* const ptr)
+  {
+    ptr->~T();
+  }
+
+  template<typename T>
   constexpr void DestructRange(T* const range_bgn, const T* const range_end)
   {
     for (T* element = range_bgn; element != range_end; ++element)
     {
-      element->~T();
+      Destruct(element);
     }
   }
 
@@ -209,9 +205,6 @@ void bfMemDeallocateObject(AllocatorConcept&& allocator, T* const ptr)
 template<typename T, Memory::ArrayConstruct init>
 T* bfMemArrayConstruct(const AllocationResult mem_block, const MemoryIndex num_elements);
 
-template<Memory::ArrayDestruct destroy, typename T>
-void bfMemDestructArray(T* const array_bgn, const T* const array_end);
-
 /*!
  * @brief
  *   Allocates an array of type \p T of length \p num_elements.
@@ -261,12 +254,11 @@ T* bfMemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elemen
  *
  * @see bfMemAllocateArray
  */
-template<Memory::ArrayDestruct destroy = Memory::ArrayDestruct::NONE, typename T, typename AllocatorConcept>
+template<typename T, typename AllocatorConcept>
 void bfMemDeallocateArray(AllocatorConcept&& allocator, T* const array, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T))
 {
   if (array && num_elements)
   {
-    bfMemDestructArray<destroy>(array, array + num_elements);
     bfMemDeallocate(allocator, array, sizeof(T) * num_elements, alignment);
   }
 }
@@ -275,38 +267,24 @@ void bfMemDeallocateArray(AllocatorConcept&& allocator, T* const array, const Me
 // Templated Function Implementations
 //-------------------------------------------------------------------------------------//
 
-#include <memory>  // uninitialized_default_construct, uninitialized_value_construct
-
 template<typename T, Memory::ArrayConstruct init>
 T* bfMemArrayConstruct(const AllocationResult mem_block, const MemoryIndex num_elements)
 {
   T* const typed_array = static_cast<T*>(mem_block.ptr);
 
-  if constexpr (init != Memory::ArrayConstruct::UNINITIALIZE)
+  if (typed_array)
   {
-    if (typed_array)
+    if constexpr (init == Memory::ArrayConstruct::DEFAULT_CONSTRUCT)
     {
-      if constexpr (init == Memory::ArrayConstruct::DEFAULT_CONSTRUCT)
-      {
-        std::uninitialized_default_construct(typed_array, typed_array + num_elements);
-      }
-      else if constexpr (init == Memory::ArrayConstruct::VALUE_CONSTRUCT)
-      {
-        std::uninitialized_value_construct(typed_array, typed_array + num_elements);
-      }
+      Memory::DefaultConstructRange(typed_array, typed_array + num_elements);
+    }
+    else if constexpr (init == Memory::ArrayConstruct::VALUE_CONSTRUCT)
+    {
+      Memory::ValueConstructRange(typed_array, typed_array + num_elements);
     }
   }
 
   return typed_array;
-}
-
-template<Memory::ArrayDestruct destroy, typename T>
-void bfMemDestructArray(T* const array_bgn, const T* const array_end)
-{
-  if constexpr (destroy == Memory::ArrayDestruct::DESTRUCT)
-  {
-    Memory::DestructRange(array_bgn, array_end);
-  }
 }
 
 #endif  // LIB_FOUNDATION_MEMORY_ALLOCATION_HPP
@@ -315,7 +293,7 @@ void bfMemDestructArray(T* const array_bgn, const T* const array_end)
 /*
   MIT License
 
-  Copyright (c) 2023 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2024 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

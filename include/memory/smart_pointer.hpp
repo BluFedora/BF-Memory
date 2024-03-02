@@ -108,7 +108,8 @@ namespace Memory
     template<typename T>
     void operator()(T* const ptr) noexcept
     {
-      bfMemDeallocateArray<Memory::ArrayDestruct::DESTRUCT>(*m_Allocator, ptr, N);
+      Memory::DestructRange(ptr, ptr + N);
+      bfMemDeallocateArray(*m_Allocator, ptr, N);
     }
   };
 
@@ -142,7 +143,8 @@ namespace Memory
     template<typename T>
     void operator()(T* const ptr) noexcept
     {
-      bfMemDeallocateArray<Memory::ArrayDestruct::DESTRUCT>(*m_Allocator, ptr, m_NumElements);
+      Memory::DestructRange(ptr, ptr + m_NumElements);
+      bfMemDeallocateArray(*m_Allocator, ptr, m_NumElements);
     }
   };
 }  // namespace Memory
@@ -185,7 +187,8 @@ SharedPtr<T> bfMemMakeShared(AllocatorConcept* const allocator, const MemoryInde
   element_type* const memory = bfMemAllocateArray<element_type, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements, alignof(T));
 
   auto deleter = [allocator, num_elements](element_type* const ptr) {
-    bfMemDeallocateArray<Memory::ArrayDestruct::DESTRUCT>(*allocator, ptr, num_elements, alignof(T));
+    Memory::DestructRange(ptr, ptr + num_elements);
+    bfMemDeallocateArray(*allocator, ptr, num_elements, alignof(T));
   };
 
   return memory ? SharedPtr<T>(memory, std::move(deleter), Memory::StlAllocator<element_type, AllocatorConcept>(*allocator)) : nullptr;
@@ -200,7 +203,8 @@ SharedPtr<T> bfMemMakeShared(AllocatorConcept* const allocator, const MemoryInde
   element_type* const memory = bfMemAllocateArray<element_type, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements, element_alignment);
 
   auto deleter = [allocator, num_elements, element_alignment](element_type* const ptr) {
-    bfMemDeallocateArray<Memory::ArrayDestruct::DESTRUCT>(*allocator, ptr, num_elements, element_alignment);
+    Memory::DestructRange(ptr, ptr + num_elements);
+    bfMemDeallocateArray(*allocator, ptr, num_elements, element_alignment);
   };
 
   return memory ? SharedPtr<T>(memory, std::move(deleter), Memory::StlAllocator<element_type, AllocatorConcept>(*allocator)) : nullptr;

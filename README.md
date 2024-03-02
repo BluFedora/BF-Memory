@@ -28,7 +28,7 @@ Basic polymorphic memory allocator library for C++17.
 | `#include <cstdlib>` | `abort` |
 | `#include <cstring>` | `memset, memcpy` |
 | `#include <iterator>` | `make_reverse_iterator` |
-| `#include <memory>` | `uninitialized_default_construct, uninitialized_value_construct, uninitialized_move, destroy_at, destroy, shared_ptr, allocate_shared, unique_ptr` |
+| `#include <memory>` | `uninitialized_move, shared_ptr, allocate_shared, unique_ptr` |
 | `#include <new>` | `'placement-new' align_val_t, nothrow` |
 | `#include <type_traits>` | `is_trivially_destructible_v, true_type, is_array_v, is_bounded_array_v, is_unbounded_array_v, enable_if_t` |
 | `#include <utility>` | `forward, move, exchange` |

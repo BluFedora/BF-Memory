@@ -5,18 +5,17 @@
  * @date   2022-09-12
  * @brief
  *
- * @copyright Copyright (c) 2022-2023 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2022-2024 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef LibFoundation_Memory_API_HPP
 #define LibFoundation_Memory_API_HPP
 
+#include "memory/alignment.hpp"   // AlignPointer
 #include "memory/allocation.hpp"  // Allocation API
 
-#include "memory/alignment.hpp"  // AlignPointer
-
 #include <iterator>     // make_reverse_iterator
-#include <memory>       // uninitialized_default_construct, uninitialized_value_construct, uninitialized_move
+#include <memory>       // uninitialized_move
 #include <type_traits>  // is_trivially_destructible_v
 
 namespace bf
@@ -54,24 +53,6 @@ void bfMemCopy(void* const dst, const void* const src, std::size_t num_bytes);
 
 void bfMemSet(void* const dst, const unsigned char value, std::size_t num_bytes);
 
-template<typename T>
-constexpr void bfMemDestruct(T* const ptr)
-{
-  std::destroy_at(ptr);
-}
-
-template<typename Iterator>
-constexpr void bfMemDestructRange(const Iterator bgn, const Iterator end)
-{
-  using Traits     = std::iterator_traits<Iterator>;
-  using value_type = typename Traits::value_type;
-
-  if constexpr (!std::is_trivially_destructible_v<value_type>)
-  {
-    std::destroy(bgn, end);
-  }
-}
-
 template<typename SrcIterator, typename DstIterator>
 DstIterator bfMemUninitializedMove(SrcIterator src_bgn, SrcIterator src_end, DstIterator dst_bgn)
 {
@@ -94,7 +75,7 @@ DstIterator bfMemUninitializedMoveRev(SrcIterator src_bgn, SrcIterator src_end, 
 /*
   MIT License
 
-  Copyright (c) 2022-2023 Shareef Abdoul-Raheem
+  Copyright (c) 2022-2024 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
