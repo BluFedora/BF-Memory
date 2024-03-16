@@ -5,7 +5,7 @@
  * @brief
  *   Helpers for creating smart pointers with custom allocators.
  *
- * @copyright Copyright (c) 2023 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2023-2024 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef LIB_FOUNDATION_MEMORY_SMART_POINTER_HPP
@@ -48,22 +48,22 @@ namespace Memory
 #endif
 
   template<typename AllocatorConcept>
-  class UniquePtrDeleter
+  class UniquePtrObjectDeleter
   {
     template<typename AllocatorConcept>
-    friend class UniquePtrDeleter;
+    friend class UniquePtrObjectDeleter;
 
    private:
     AllocatorConcept* m_Allocator;
 
    public:
-    constexpr UniquePtrDeleter(AllocatorConcept* const allocator = nullptr) :
+    constexpr UniquePtrObjectDeleter(AllocatorConcept* const allocator = nullptr) :
       m_Allocator{allocator}
     {
     }
 
     template<typename U>
-    constexpr UniquePtrDeleter(UniquePtrDeleter<U>&& rhs) :
+    constexpr UniquePtrObjectDeleter(UniquePtrObjectDeleter<U>&& rhs) :
       m_Allocator{std::exchange(rhs.m_Allocator, nullptr)}
     {
     }
@@ -147,6 +147,9 @@ namespace Memory
       bfMemDeallocateArray(*m_Allocator, ptr, m_NumElements);
     }
   };
+
+  template<typename T, typename AllocatorConcept>
+  using UniquePtrDeleter = std::conditional_t<std::is_array_v<T>, UniquePtrArrayDeleter<T, AllocatorConcept, std::extent_v<T>>, UniquePtrObjectDeleter<AllocatorConcept>>;
 }  // namespace Memory
 
 template<typename T>
@@ -227,8 +230,8 @@ SharedPtr<T[]> bfMemMakeSharedAliasArray(SharedPtr<U> owner, T* const ptr)
 namespace detail
 {
   template<typename T, typename AllocatorConcept>
-  using BaseUniquePtr = std::unique_ptr<T, std::conditional_t<std::is_array_v<T>, Memory::UniquePtrArrayDeleter<T, AllocatorConcept, std::extent_v<T>>, Memory::UniquePtrDeleter<AllocatorConcept>>>;
-}
+  using BaseUniquePtr = std::unique_ptr<T, Memory::UniquePtrDeleter<T, AllocatorConcept>>;
+}  // namespace detail
 
 /*!
  * @brief
@@ -238,8 +241,7 @@ namespace detail
  *   The normal unique_ptr doesn't have an specialization for a bounded array and will try to use
  *   the singular object specialization which calls the incorrect delete.
  *
- *   One additional feature if the ability to query the number of elements the UniquePtr has
- *   through the deleter.
+ *   One additional feature is the ability to query the number of elements the UniquePtr<T[]> has.
  *
  *   ```
  *   UniquePtr<byte[]> ptr = ...;
@@ -280,8 +282,10 @@ struct UniquePtr : public detail::BaseUniquePtr<T, AllocatorConcept>
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<!std::is_array_v<T>>, typename... Args>
 UniquePtr<T, AllocatorConcept> bfMemMakeUnique(AllocatorConcept* const allocator, Args&&... args)
 {
-  return UniquePtr<T, AllocatorConcept>(bfMemAllocateObject<T>(*allocator, std::forward<Args>(args)...), Memory::UniquePtrDeleter<AllocatorConcept>(allocator));
+  return UniquePtr<T, AllocatorConcept>(bfMemAllocateObject<T>(*allocator, std::forward<Args>(args)...), Memory::UniquePtrObjectDeleter<AllocatorConcept>(allocator));
 }
+
+
 
 // TODO(SR): Add overloads with custom alignment.
 
@@ -306,13 +310,30 @@ UniquePtr<T, AllocatorConcept> bfMemMakeUnique(AllocatorConcept* const allocator
 
 #undef IS_CXX20
 
+
+namespace Memory
+{
+  template<typename T, typename AllocatorConcept>
+  UniquePtrDeleter<T, AllocatorConcept>* GetDeleter(const UniquePtr<T, AllocatorConcept>& ptr) noexcept
+  {
+    return ptr != nullptr ? &ptr->get_deleter() : nullptr;
+  }
+
+  template<typename DeleterType, typename T>
+  DeleterType* GetDeleter(const SharedPtr<T>& ptr) noexcept
+  {
+    return std::get_deleter<DeleterType>(ptr);
+  }
+}  // namespace Memory
+
+
 #endif  // LIB_FOUNDATION_MEMORY_SMART_POINTER_HPP
 
 /******************************************************************************/
 /*
   MIT License
 
-  Copyright (c) 2023 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2024 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
