@@ -23,6 +23,11 @@ using byte = unsigned char;  //!< Type to represent a single byte of memory.
 #define bfMegabytes(n) static_cast<MemoryIndex>(bfKilobytes(n) * 1024)
 #define bfGigabytes(n) static_cast<MemoryIndex>(bfMegabytes(n) * 1024)
 
+namespace Memory
+{
+  constexpr MemoryIndex AlignSize(const MemoryIndex size, const MemoryIndex alignment) noexcept;
+}
+
 /*!
  * @brief
  *   Helper type for calculating the size and alignment requirements of a single
@@ -57,15 +62,32 @@ struct MemoryRequirements
   // Setup API
 
   template<typename T>
-  MemoryIndex Append(const MemoryIndex element_count = 1u, const MemoryIndex element_alignment = alignof(T)) noexcept
+  constexpr MemoryIndex Append(const MemoryIndex element_count = 1u, const MemoryIndex element_alignment = alignof(T)) noexcept
   {
     return Append(sizeof(T), element_count, element_alignment);
   }
 
   // Returns the offset in the buffer that this element(s) would be located at.
-  MemoryIndex Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept;
+  // constexpr MemoryIndex Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept;
 
-  MemoryIndex Append(const MemoryRequirements mem_reqs, const MemoryIndex element_count = 1u) noexcept
+  constexpr MemoryIndex Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
+  {
+    const MemoryIndex allocation_size = element_size * element_count;  // TODO(SR): Check for overflow?
+
+    if (!allocation_size)
+    {
+      return size;
+    }
+
+    const MemoryIndex allocation_offset = Memory::AlignSize(size, element_alignment);
+
+    size      = allocation_offset + allocation_size;
+    alignment = (element_alignment > alignment) ? element_alignment : alignment;
+
+    return allocation_offset;
+  }
+
+  constexpr MemoryIndex Append(const MemoryRequirements mem_reqs, const MemoryIndex element_count = 1u) noexcept
   {
     return Append(mem_reqs.size, element_count, mem_reqs.alignment);
   }
