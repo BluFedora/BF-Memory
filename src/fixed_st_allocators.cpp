@@ -2,7 +2,9 @@
 
 #include "memory/alignment.hpp"
 
-// LinearAllocatorState //
+//-------------------------------------------------------------------------------------//
+// Linear Allocator
+//-------------------------------------------------------------------------------------//
 
 Memory::LinearAllocator::LinearAllocator(byte* const memory_block, const MemoryIndex memory_block_size) noexcept :
   m_MemoryBgn{memory_block},
@@ -44,7 +46,7 @@ AllocationResult Memory::LinearAllocator::Allocate(const MemoryIndex size, const
 
 void Memory::LinearAllocator::Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
 {
-  (void)alignment;
+  (void)alignment;  // TODO(SR): Assert that the pointer is in the memory region.
 
   const byte* const ptr_end = static_cast<const byte*>(ptr) + size;
 
