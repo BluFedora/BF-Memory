@@ -106,7 +106,10 @@ void* MemoryRequirements::Alloc(void** buffer, const void* const buffer_end, con
 
   *buffer = result + allocation_size;
 
-  bfMemAssert(*buffer <= buffer_end, "Not enough space in buffer, incorrect buffer size for the MemoryRequirements passed in.");
+  if (buffer_end)
+  {
+    bfMemAssert(*buffer <= buffer_end, "Not enough space in buffer, incorrect buffer size for the MemoryRequirements passed in.");
+  }
 
   return result;
 }
