@@ -3,21 +3,21 @@
  * @file   stl_allocator.hpp
  * @author Shareef Raheem (https://blufedora.github.io/)
  * @brief
- *   > This allocator is a designed for use with stl containers.
- *   > This must only be used in C++11 or later because C++03 required all allocators of a certain type to be compatible but this allocator is stateful.
+ *   - This allocator is a designed for use with stl containers.
+ *   - This must only be used in C++11 or later because C++03 required all allocators of a certain type to be compatible but this allocator is stateful.
  *
  *  References:
  *    - [Allocator Boilerplate](https://howardhinnant.github.io/allocator_boilerplate.html)
  *    - [MSVC Allocators](https://docs.microsoft.com/en-us/cpp/standard-library/allocators?view=msvc-170)
  *
- * @copyright Copyright (c) 2019-2023 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2019-2024 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef LIB_FOUNDATION_MEMORY_STL_ALLOCATOR_HPP
 #define LIB_FOUNDATION_MEMORY_STL_ALLOCATOR_HPP
 
 #include "allocation.hpp"           // IAllocator, bfMemAllocateArray, bfMemDeallocateArray
-#include "memory/default_heap.hpp"  // Memory::DefaultHeap
+#include "memory/default_heap.hpp"  // DefaultHeap
 
 #include <utility>  // forward
 
@@ -140,42 +140,41 @@ namespace Memory
       static_assert(std::is_convertible_v<RhsAllocatorConcept *, AllocatorConcept *>, "Allocator types not convertable.");
     }
 
-    static size_type max_size() noexcept { return static_cast<size_type>(-1) / sizeof(value_type); }
+    static [[nodiscard]] size_type max_size() noexcept { return static_cast<size_type>(-1) / sizeof(value_type); }
 
-    pointer                         address(reference x) const noexcept { return &x; }
-    const_pointer                   address(const_reference x) const noexcept { return &x; }
+    [[nodiscard]] pointer           address(reference x) const noexcept { return &x; }
+    [[nodiscard]] const_pointer     address(const_reference x) const noexcept { return &x; }
     [[nodiscard]] constexpr pointer allocate(size_type s) { return s ? bfMemAllocateArray<T>(m_MemoryBackend, s) : nullptr; }
     constexpr void                  deallocate(pointer p, size_type s) { bfMemDeallocateArray(m_MemoryBackend, p, s); }
 
     template<class U, class... Args>
-    void construct(U *p, Args &&...args)
+    void construct(U *const p, Args &&...args)
     {
       ::new (p) U(std::forward<Args>(args)...);
     }
 
     template<class U>
-    void destroy(U *p)
+    void destroy(U *const p)
     {
       p->~U();
     }
 
-    StlAllocator select_on_container_copy_construction() const noexcept { return *this; }
+    [[nodiscard]] StlAllocator select_on_container_copy_construction() const noexcept { return *this; }
 
     template<class U>
-    constexpr bool operator==(const StlAllocator<U> &rhs) const noexcept
+    [[nodiscard]] constexpr bool operator==(const StlAllocator<U> &rhs) const noexcept
     {
       return &backend() == &rhs.backend();
     }
 
     template<class U>
-    constexpr bool operator!=(const StlAllocator<U> &rhs) const noexcept
+    [[nodiscard]] constexpr bool operator!=(const StlAllocator<U> &rhs) const noexcept
     {
       return &backend() != &rhs.backend();
     }
 
     AllocatorConcept &backend() const { return m_MemoryBackend; }
   };
-
 }  // namespace Memory
 
 #endif  // LIB_FOUNDATION_MEMORY_STL_ALLOCATOR_HPP
@@ -184,7 +183,7 @@ namespace Memory
 /*
   MIT License
 
-  Copyright (c) 2019-2023 Shareef Abdoul-Raheem
+  Copyright (c) 2019-2024 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

@@ -95,7 +95,12 @@ bool MemoryRequirements::IsBufferValid(const void* const buffer) const noexcept
 
 void* MemoryRequirements::Alloc(void** buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
 {
-  const MemoryIndex allocation_size = element_size * element_count;  // TODO(SR): Check for overflow?
+  if (WillMulOverflow(element_size, element_count))
+  {
+    return nullptr;
+  }
+
+  const MemoryIndex allocation_size = element_size * element_count;
 
   if (!allocation_size)
   {

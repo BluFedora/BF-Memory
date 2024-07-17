@@ -19,9 +19,14 @@ using MemoryIndex = decltype(sizeof(int));  //!<
 
 using byte = unsigned char;  //!< Type to represent a single byte of memory.
 
-#define bfKilobytes(n) static_cast<MemoryIndex>((n)*1024)
+#define bfKilobytes(n) static_cast<MemoryIndex>((n) * 1024)
 #define bfMegabytes(n) static_cast<MemoryIndex>(bfKilobytes(n) * 1024)
 #define bfGigabytes(n) static_cast<MemoryIndex>(bfMegabytes(n) * 1024)
+
+constexpr bool WillMulOverflow(const MemoryIndex lhs, const MemoryIndex rhs)
+{
+  return (rhs > 1) ? (lhs > (MemoryIndex(-1) / rhs)) : false;
+}
 
 namespace Memory
 {
@@ -41,9 +46,6 @@ namespace Memory
  *   const MemoryIndex buffer0_offset = mem_reqs.Append<int>();
  *   const MemoryIndex buffer1_offset = mem_reqs.Append<char>(1999);
  *   const MemoryIndex buffer2_offset = mem_reqs.Append<float>(1, simd_sse_alignment);
- *
- *
- *
  *   ```
  */
 struct MemoryRequirements
@@ -72,7 +74,12 @@ struct MemoryRequirements
 
   constexpr MemoryIndex Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
   {
-    const MemoryIndex allocation_size = element_size * element_count;  // TODO(SR): Check for overflow?
+    if (WillMulOverflow(element_size, element_count))
+    {
+      return size;
+    }
+
+    const MemoryIndex allocation_size = element_size * element_count;
 
     if (!allocation_size)
     {

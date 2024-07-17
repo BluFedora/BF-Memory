@@ -47,6 +47,12 @@ namespace Memory
     }
   }
 
+  template<typename T, typename... Args>
+  T* Construct(void* const memory, Args&&... args)
+  {
+    return memory ? ::new (memory) T(std::forward<Args>(args)...) : nullptr;
+  }
+
   template<typename T>
   constexpr void Destruct(T* const ptr)
   {

@@ -57,19 +57,19 @@ namespace Memory
     AllocatorConcept* m_Allocator;
 
    public:
-    constexpr UniquePtrObjectDeleter(AllocatorConcept* const allocator = nullptr) :
+    constexpr UniquePtrObjectDeleter(AllocatorConcept* const allocator = nullptr) noexcept :
       m_Allocator{allocator}
     {
     }
 
     template<typename U>
-    constexpr UniquePtrObjectDeleter(UniquePtrObjectDeleter<U>&& rhs) :
+    constexpr UniquePtrObjectDeleter(UniquePtrObjectDeleter<U>&& rhs) noexcept :
       m_Allocator{std::exchange(rhs.m_Allocator, nullptr)}
     {
     }
 
-    constexpr AllocatorConcept* allocator() const { return m_Allocator; }
-    constexpr MemoryIndex       length() const { return m_Allocator != nullptr ? 1u : 0u; }
+    constexpr AllocatorConcept* allocator() const noexcept { return m_Allocator; }
+    constexpr MemoryIndex       length() const noexcept { return m_Allocator != nullptr ? 1u : 0u; }
 
     template<typename T>
     void operator()(T* const ptr) noexcept
@@ -91,7 +91,7 @@ namespace Memory
     AllocatorConcept* m_Allocator;
 
    public:
-    constexpr UniquePtrArrayDeleter(AllocatorConcept* const allocator = nullptr) :
+    constexpr UniquePtrArrayDeleter(AllocatorConcept* const allocator = nullptr) noexcept :
       m_Allocator{allocator}
     {
     }
@@ -102,8 +102,8 @@ namespace Memory
     {
     }
 
-    constexpr AllocatorConcept* allocator() const { return m_Allocator; }
-    constexpr MemoryIndex       length() const { return m_Allocator != nullptr ? N : 0u; }
+    constexpr AllocatorConcept* allocator() const noexcept { return m_Allocator; }
+    constexpr MemoryIndex       length() const noexcept { return m_Allocator != nullptr ? N : 0u; }
 
     template<typename T>
     void operator()(T* const ptr) noexcept
@@ -151,6 +151,10 @@ namespace Memory
   template<typename T, typename AllocatorConcept>
   using UniquePtrDeleter = std::conditional_t<std::is_array_v<T>, UniquePtrArrayDeleter<T, AllocatorConcept, std::extent_v<T>>, UniquePtrObjectDeleter<AllocatorConcept>>;
 }  // namespace Memory
+
+// Articles on std::shared_ptr
+//   - [What it means when you convert between different shared_ptrs](https://devblogs.microsoft.com/oldnewthing/20230817-00/?p=108611)
+//   - [Inside STL: The shared_ptr constructor and enable_shared_from_this](https://devblogs.microsoft.com/oldnewthing/20230816-00/?p=108608)
 
 template<typename T>
 using SharedPtr = std::shared_ptr<T>;
@@ -221,6 +225,7 @@ SharedPtr<T> bfMemMakeSharedAlias(SharedPtr<U> owner, T* const ptr)
   return owner.use_count() != 0 ? SharedPtr<T>(std::move(owner), ptr) : nullptr;
 }
 
+//   std::remove_extent_t<T> ??
 template<typename T, typename U>
 SharedPtr<T[]> bfMemMakeSharedAliasArray(SharedPtr<U> owner, T* const ptr)
 {
@@ -272,11 +277,9 @@ struct UniquePtr : public detail::BaseUniquePtr<T, AllocatorConcept>
 
   constexpr element_type& operator[](const MemoryIndex index) const noexcept { return this->get()[index]; }
 
-  constexpr element_type*       begin() { return this->get(); }
-  constexpr element_type*       end() { return this->get() + length(); }
-  constexpr const element_type* begin() const { return this->get(); }
-  constexpr const element_type* end() const { return this->get() + length(); }
-  constexpr MemoryIndex         length() const { return this->get_deleter().length(); }
+  constexpr element_type* begin() const noexcept { return this->get(); }
+  constexpr element_type* end() const noexcept { return this->get() + length(); }
+  constexpr MemoryIndex   length() const noexcept { return this->get_deleter().length(); }
 };
 
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<!std::is_array_v<T>>, typename... Args>
@@ -284,8 +287,6 @@ UniquePtr<T, AllocatorConcept> bfMemMakeUnique(AllocatorConcept* const allocator
 {
   return UniquePtr<T, AllocatorConcept>(bfMemAllocateObject<T>(*allocator, std::forward<Args>(args)...), Memory::UniquePtrObjectDeleter<AllocatorConcept>(allocator));
 }
-
-
 
 // TODO(SR): Add overloads with custom alignment.
 
@@ -310,7 +311,6 @@ UniquePtr<T, AllocatorConcept> bfMemMakeUnique(AllocatorConcept* const allocator
 
 #undef IS_CXX20
 
-
 namespace Memory
 {
   template<typename T, typename AllocatorConcept>
@@ -325,7 +325,6 @@ namespace Memory
     return std::get_deleter<DeleterType>(ptr);
   }
 }  // namespace Memory
-
 
 #endif  // LIB_FOUNDATION_MEMORY_SMART_POINTER_HPP
 

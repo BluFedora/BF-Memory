@@ -4,27 +4,29 @@
  * @author Shareef Raheem (https://blufedora.github.io/)
  * @brief
  *    The default global thread-safe heap allocator.
- * 
- * @copyright Copyright (c) 2023 Shareef Abdoul-Raheem
+ *
+ * @copyright Copyright (c) 2023-2024 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef LIB_FOUNDATION_MEMORY_DEFAULT_HEAP_HPP
 #define LIB_FOUNDATION_MEMORY_DEFAULT_HEAP_HPP
 
-#include "basic_types.hpp"
+#include "basic_types.hpp"  // IAllocator
 
 #ifndef BF_MEMORY_NO_DEFAULT_HEAP
 #define BF_MEMORY_NO_DEFAULT_HEAP 0  //!< Disables the default heap, can be implmented by a user defined translation unit.
 #endif
 
 #ifndef BF_MEMORY_DEBUG_HEAP
-#define BF_MEMORY_DEBUG_HEAP 1 //!< The default heap allocator will have debug checks.
+#define BF_MEMORY_DEBUG_HEAP 1  //!< The default heap allocator will have debug checks.
 #endif
 
+#if !BF_MEMORY_NO_DEFAULT_HEAP
 namespace Memory
 {
   IAllocator& DefaultHeap() noexcept;
-}
+}  // namespace Memory
+#endif
 
 #endif  // LIB_FOUNDATION_MEMORY_DEFAULT_HEAP_HPP
 
@@ -32,7 +34,7 @@ namespace Memory
 /*
   MIT License
 
-  Copyright (c) 2023 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2024 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
