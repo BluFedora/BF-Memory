@@ -59,25 +59,6 @@ void* Memory::StandardAlign(const MemoryIndex alignment, const MemoryIndex size,
   return NULL;
 }
 
-#if 0
-constexpr MemoryIndex MemoryRequirements::Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
-{
-  const MemoryIndex allocation_size = element_size * element_count;  // TODO(SR): Check for overflow?
-
-  if (!allocation_size)
-  {
-    return size;
-  }
-
-  const MemoryIndex allocation_offset = Memory::AlignSize(size, element_alignment);
-
-  size      = allocation_offset + allocation_size;
-  alignment = (element_alignment > alignment) ? element_alignment : alignment;
-
-  return allocation_offset;
-}
-#endif
-
 void MemoryRequirements::AlignSizeToAlignment() noexcept
 {
   size = Memory::AlignSize(size, alignment);

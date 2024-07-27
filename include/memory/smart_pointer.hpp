@@ -47,109 +47,75 @@ namespace Memory
 
 #endif
 
-  template<typename AllocatorConcept>
-  class UniquePtrObjectDeleter
+  /*!
+   * @brief
+   *   Polymorphic deleter for UniquePtr.
+   */
+  class BaseUniquePtrDeleter
   {
-    template<typename AllocatorConcept>
-    friend class UniquePtrObjectDeleter;
+    using UniquePtrObjectDeleterFn = void (*)(void* const ptr, void* const allocator, const MemoryIndex length);
 
    private:
-    AllocatorConcept* m_Allocator;
+    void*                    m_Allocator;
+    MemoryIndex              m_Length;
+    UniquePtrObjectDeleterFn m_Deleter;
 
    public:
-    constexpr UniquePtrObjectDeleter(AllocatorConcept* const allocator = nullptr) noexcept :
-      m_Allocator{allocator}
+    constexpr BaseUniquePtrDeleter() noexcept :
+      m_Allocator{nullptr},
+      m_Length{0u},
+      m_Deleter{nullptr}
     {
     }
 
-    template<typename U>
-    constexpr UniquePtrObjectDeleter(UniquePtrObjectDeleter<U>&& rhs) noexcept :
-      m_Allocator{std::exchange(rhs.m_Allocator, nullptr)}
+    constexpr BaseUniquePtrDeleter(void* const allocator, const MemoryIndex length, const UniquePtrObjectDeleterFn deleter_fn) noexcept :
+      m_Allocator{allocator},
+      m_Length{length},
+      m_Deleter{deleter_fn}
     {
     }
 
-    constexpr AllocatorConcept* allocator() const noexcept { return m_Allocator; }
-    constexpr MemoryIndex       length() const noexcept { return m_Allocator != nullptr ? 1u : 0u; }
+    constexpr MemoryIndex length() const noexcept { return m_Length; }
 
-    template<typename T>
-    void operator()(T* const ptr) noexcept
+    void operator()(void* const ptr) noexcept
     {
-      bfMemDeallocateObject(*m_Allocator, ptr);
+      m_Deleter(ptr, m_Allocator, m_Length);
     }
   };
 
-  template<typename T, typename AllocatorConcept, MemoryIndex N>
-  class UniquePtrArrayDeleter
+  template<typename T>
+  struct UniquePtrDeleter : public BaseUniquePtrDeleter
   {
-    template<typename T, typename AllocatorConcept, MemoryIndex N>
-    friend class UniquePtrArrayDeleter;
-
-   public:
     using pointer = std::remove_extent_t<T>*;  //!< Bounded array needs to redefine pointer type from *T[N] => T*.
 
-   private:
-    AllocatorConcept* m_Allocator;
+    using BaseUniquePtrDeleter::BaseUniquePtrDeleter;
 
-   public:
-    constexpr UniquePtrArrayDeleter(AllocatorConcept* const allocator = nullptr) noexcept :
-      m_Allocator{allocator}
+    template<typename U>
+    UniquePtrDeleter(UniquePtrDeleter<U>&& rhs) :
+      BaseUniquePtrDeleter(rhs)
     {
-    }
-
-    template<typename RhsAllocatorConcept>
-    constexpr UniquePtrArrayDeleter(UniquePtrArrayDeleter<T, RhsAllocatorConcept, N>&& rhs) :
-      m_Allocator{std::exchange(rhs.m_Allocator, nullptr)}
-    {
-    }
-
-    constexpr AllocatorConcept* allocator() const noexcept { return m_Allocator; }
-    constexpr MemoryIndex       length() const noexcept { return m_Allocator != nullptr ? N : 0u; }
-
-    template<typename T>
-    void operator()(T* const ptr) noexcept
-    {
-      Memory::DestructRange(ptr, ptr + N);
-      bfMemDeallocateArray(*m_Allocator, ptr, N);
     }
   };
 
   template<typename T, typename AllocatorConcept>
-  class UniquePtrArrayDeleter<T, AllocatorConcept, 0u>
+  UniquePtrDeleter<T> MakeUniquePtrDeleter(void* const allocator, const MemoryIndex length)
   {
-    template<typename T, typename AllocatorConcept, MemoryIndex N>
-    friend class UniquePtrArrayDeleter;
+    return UniquePtrDeleter<T>(
+     allocator, length, +[](void* const ptr, void* const allocator, const MemoryIndex length) -> void {
+       std::remove_extent_t<T>* const typed_ptr       = static_cast<std::remove_extent_t<T>*>(ptr);
+       AllocatorConcept&              typed_allocator = *static_cast<AllocatorConcept*>(allocator);
 
-   private:
-    AllocatorConcept* m_Allocator;
-    MemoryIndex       m_NumElements;
-
-   public:
-    constexpr UniquePtrArrayDeleter(AllocatorConcept* const allocator = nullptr, const MemoryIndex num_elements = 0u) :
-      m_Allocator{allocator},
-      m_NumElements{num_elements}
-    {
-    }
-
-    template<typename RhsAllocatorConcept>
-    constexpr UniquePtrArrayDeleter(UniquePtrArrayDeleter<T, RhsAllocatorConcept, 0u>&& rhs) :
-      m_Allocator{std::exchange(rhs.m_Allocator, nullptr)},
-      m_NumElements{std::exchange(rhs.m_NumElements, 0)}
-    {
-    }
-
-    constexpr AllocatorConcept* allocator() const { return m_Allocator; }
-    constexpr MemoryIndex       length() const { return m_Allocator != nullptr ? m_NumElements : 0u; }
-
-    template<typename T>
-    void operator()(T* const ptr) noexcept
-    {
-      Memory::DestructRange(ptr, ptr + m_NumElements);
-      bfMemDeallocateArray(*m_Allocator, ptr, m_NumElements);
-    }
-  };
-
-  template<typename T, typename AllocatorConcept>
-  using UniquePtrDeleter = std::conditional_t<std::is_array_v<T>, UniquePtrArrayDeleter<T, AllocatorConcept, std::extent_v<T>>, UniquePtrObjectDeleter<AllocatorConcept>>;
+       if constexpr (std::is_array_v<T>)
+       {
+         Memory::DestructRange(typed_ptr, typed_ptr + length);
+         bfMemDeallocateArray(typed_allocator, typed_ptr, length);
+       }
+       else
+       {
+         bfMemDeallocateObject(typed_allocator, typed_ptr);
+       }
+     });
+  }
 }  // namespace Memory
 
 // Articles on std::shared_ptr
@@ -232,12 +198,6 @@ SharedPtr<T[]> bfMemMakeSharedAliasArray(SharedPtr<U> owner, T* const ptr)
   return owner.use_count() != 0 ? SharedPtr<T[]>(std::move(owner), ptr) : nullptr;
 }
 
-namespace detail
-{
-  template<typename T, typename AllocatorConcept>
-  using BaseUniquePtr = std::unique_ptr<T, Memory::UniquePtrDeleter<T, AllocatorConcept>>;
-}  // namespace detail
-
 /*!
  * @brief
  *   The default std::unique_ptr does not support std::unique_ptr<T[N]> with a bounded array
@@ -256,65 +216,50 @@ namespace detail
  * @tparam T
  *   The type of object stored in this pointer.
  *
- * @tparam AllocatorConcept
- *   The allocator type for this UniquePtr.
  */
-template<typename T, typename AllocatorConcept = IAllocator>
-struct UniquePtr : public detail::BaseUniquePtr<T, AllocatorConcept>
+template<typename T>
+struct UniquePtr : public std::unique_ptr<T, Memory::UniquePtrDeleter<T>>
 {
   using element_type = std::remove_extent_t<T>;
 
-  using detail::BaseUniquePtr<T, AllocatorConcept>::unique_ptr;
-
-  template<typename RhsAllocator>
-  UniquePtr(UniquePtr<T, RhsAllocator>&& rhs) :
-    detail::BaseUniquePtr<T, AllocatorConcept>(rhs.release(), std::move(rhs.get_deleter()))
-  {
-    static_assert(std::is_convertible_v<RhsAllocator*, AllocatorConcept*>, "Allocator types not convertable.");
-  }
+  using std::unique_ptr<T, Memory::UniquePtrDeleter<T>>::unique_ptr;
 
   UniquePtr(T* const ptr) = delete;
 
   constexpr element_type& operator[](const MemoryIndex index) const noexcept { return this->get()[index]; }
-
   constexpr element_type* begin() const noexcept { return this->get(); }
   constexpr element_type* end() const noexcept { return this->get() + length(); }
   constexpr MemoryIndex   length() const noexcept { return this->get_deleter().length(); }
 };
 
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<!std::is_array_v<T>>, typename... Args>
-UniquePtr<T, AllocatorConcept> bfMemMakeUnique(AllocatorConcept* const allocator, Args&&... args)
+UniquePtr<T> bfMemMakeUnique(AllocatorConcept* const allocator, Args&&... args)
 {
-  return UniquePtr<T, AllocatorConcept>(bfMemAllocateObject<T>(*allocator, std::forward<Args>(args)...), Memory::UniquePtrObjectDeleter<AllocatorConcept>(allocator));
+  return UniquePtr<T>(bfMemAllocateObject<T>(*allocator, std::forward<Args>(args)...), Memory::MakeUniquePtrDeleter<T, AllocatorConcept>(allocator, 1u));
 }
 
 // TODO(SR): Add overloads with custom alignment.
 
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<Memory::is_unbounded_array_v<T>>>
-UniquePtr<T, AllocatorConcept> bfMemMakeUnique(AllocatorConcept* const allocator, const MemoryIndex num_elements)
+UniquePtr<T> bfMemMakeUnique(AllocatorConcept* const allocator, const MemoryIndex num_elements)
 {
-  std::remove_extent_t<T>* const                                       allocation = bfMemAllocateArray<std::remove_extent_t<T>, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements);
-  Memory::UniquePtrArrayDeleter<T, AllocatorConcept, std::extent_v<T>> deleter{allocator, num_elements};
-
-  return UniquePtr<T, AllocatorConcept>(allocation, std::move(deleter));
+  return UniquePtr<T>(bfMemAllocateArray<std::remove_extent_t<T>, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements), Memory::MakeUniquePtrDeleter<T, AllocatorConcept>(allocator, num_elements));
 }
 
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<Memory::is_bounded_array_v<T>>>
-UniquePtr<T, AllocatorConcept> bfMemMakeUnique(AllocatorConcept* const allocator)
+UniquePtr<T> bfMemMakeUnique(AllocatorConcept* const allocator)
 {
-  constexpr MemoryIndex                                                num_elements = std::extent_v<T>;
-  std::remove_extent_t<T>* const                                       allocation   = bfMemAllocateArray<std::remove_extent_t<T>, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements);
-  Memory::UniquePtrArrayDeleter<T, AllocatorConcept, std::extent_v<T>> deleter{allocator};
+  constexpr MemoryIndex num_elements = std::extent_v<T>;
 
-  return UniquePtr<T, AllocatorConcept>(allocation, std::move(deleter));
+  return UniquePtr<T>(bfMemAllocateArray<std::remove_extent_t<T>, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements), Memory::MakeUniquePtrDeleter<T, AllocatorConcept>(allocator, num_elements));
 }
 
 #undef IS_CXX20
 
 namespace Memory
 {
-  template<typename T, typename AllocatorConcept>
-  UniquePtrDeleter<T, AllocatorConcept>* GetDeleter(const UniquePtr<T, AllocatorConcept>& ptr) noexcept
+  template<typename T>
+  UniquePtrDeleter<T>* GetDeleter(const UniquePtr<T>& ptr) noexcept
   {
     return ptr != nullptr ? &ptr->get_deleter() : nullptr;
   }

@@ -159,7 +159,7 @@ T* bfMemAllocateObject(AllocatorConcept&& allocator, Args&&... args)
 {
   const AllocationResult mem_block = bfMemAllocate(allocator, sizeof(T), alignof(T));
 
-  return mem_block ? new (mem_block.ptr) T(std::forward<Args>(args)...) : nullptr;
+  return Memory::Construct<T>(mem_block.ptr, std::forward<Args>(args)...);
 }
 
 /*!
