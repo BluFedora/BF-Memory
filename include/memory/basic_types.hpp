@@ -276,6 +276,13 @@ struct IAllocator
   }
 };
 
+/*!
+ * @brief
+ *   Type erased polymorphic view for an allocator.
+ *   To be used as a parameter type.
+ */
+using AllocatorView = IAllocator;
+
 // Helper Class for allowing both polymorphic and static interface.
 template<typename BaseAllocator>
 class Allocator : public IAllocator
