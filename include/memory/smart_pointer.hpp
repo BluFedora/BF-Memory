@@ -86,7 +86,7 @@ namespace Memory
   template<typename T>
   struct UniquePtrDeleter : public BaseUniquePtrDeleter
   {
-    using pointer = std::remove_extent_t<T>*;  //!< Bounded array needs to redefine pointer type from *T[N] => T*.
+    using pointer = std::remove_extent_t<T>*;  //!< Bounded array needs to redefine pointer type from T[N]* => T*.
 
     using BaseUniquePtrDeleter::BaseUniquePtrDeleter;
 
