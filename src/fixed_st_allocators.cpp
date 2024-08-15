@@ -108,15 +108,13 @@ Memory::StackAllocator::StackAllocator(byte* const memory_block, MemoryIndex mem
 
 AllocationResult Memory::StackAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo&) noexcept
 {
-  const std::size_t needed_memory = size + sizeof(StackAllocatorHeader);
-  byte* const       restore_point = m_StackPtr;
-  byte* const       aligned_ptr   = reinterpret_cast<byte*>(AlignPointer(restore_point + sizeof(StackAllocatorHeader), alignment));
+  byte* const aligned_ptr    = reinterpret_cast<byte*>(AlignPointer(m_StackPtr + sizeof(StackAllocatorHeader), alignment));
+  byte* const allocation_end = aligned_ptr + size;
 
-  if ((aligned_ptr + needed_memory) <= m_MemoryEnd)
+  if (allocation_end <= m_MemoryEnd)
   {
-    m_StackPtr += needed_memory;
-
-    Stack::WriteHeader(aligned_ptr - sizeof(StackAllocatorHeader), StackAllocatorHeader{restore_point, needed_memory});
+    Stack::WriteHeader(aligned_ptr - sizeof(StackAllocatorHeader), StackAllocatorHeader{m_StackPtr, size});
+    m_StackPtr = allocation_end;
 
     return AllocationResult{aligned_ptr, size};
   }

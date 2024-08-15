@@ -40,6 +40,9 @@ namespace Memory
 
     MemoryIndex UsedMemory() const { return m_Current - m_MemoryBgn; }
     MemoryIndex TotalMemory() const { return m_MemoryEnd - m_MemoryBgn; }
+    const byte* MemoryBgn() const { return m_MemoryBgn; }
+    const byte* MemoryEnd() const { return m_MemoryEnd; }
+    bool        IsPtrInRange(const void* const ptr) const { return m_MemoryBgn <= static_cast<const byte*>(ptr) && static_cast<const byte*>(ptr) < m_MemoryEnd; }
 
     void             Init(byte* const memory_block, const MemoryIndex memory_block_size);
     void             Clear() noexcept { m_Current = m_MemoryBgn; }
@@ -160,10 +163,6 @@ namespace Memory
     MemoryIndex         m_NumElements;
 
    public:
-    /*!
-     * @brief
-     *   Make sure \p pool_block_size is aligned up to the designed alignment.
-     */
     PoolAllocator(byte* const memory_block, const MemoryIndex memory_size, const MemoryIndex block_size, const MemoryIndex alignment) noexcept;
 
     void             Reset() noexcept;
