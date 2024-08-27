@@ -41,8 +41,6 @@ namespace Memory
     void             Clear() noexcept { m_Current.store(m_MemoryBgn); }
     AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info  */) noexcept;
     void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
-
-    operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
 }  // namespace Memory
 

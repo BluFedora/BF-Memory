@@ -16,7 +16,7 @@
 #ifndef LIB_FOUNDATION_MEMORY_STL_ALLOCATOR_HPP
 #define LIB_FOUNDATION_MEMORY_STL_ALLOCATOR_HPP
 
-#include "allocation.hpp"           // IAllocator, bfMemAllocateArray, bfMemDeallocateArray
+#include "allocation.hpp"           // IPolymorphicAllocator, bfMemAllocateArray, bfMemDeallocateArray
 #include "memory/default_heap.hpp"  // DefaultHeap
 
 #include <utility>  // forward
@@ -94,12 +94,12 @@ namespace Memory
 
   /*!
    * @brief
-   *   Provides an STL compliant proxy for the IAllocator API.
+   *   Provides an STL compliant proxy for the IPolymorphicAllocator API.
    *
    * @tparam T
    *   The type of object this allocated expects to make memory for.
    */
-  template<typename T, typename AllocatorConcept = IAllocator>
+  template<typename T, typename AllocatorConcept = IPolymorphicAllocator>
   class StlAllocator
   {
    public:

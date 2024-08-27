@@ -11,7 +11,7 @@
 #ifndef LIB_FOUNDATION_MEMORY_DEFAULT_HEAP_HPP
 #define LIB_FOUNDATION_MEMORY_DEFAULT_HEAP_HPP
 
-#include "basic_types.hpp"  // IAllocator
+#include "basic_types.hpp"  // IPolymorphicAllocator
 
 #ifndef BF_MEMORY_NO_DEFAULT_HEAP
 #define BF_MEMORY_NO_DEFAULT_HEAP 0  //!< Disables the default heap, can be implmented by a user defined translation unit.
@@ -24,7 +24,7 @@
 #if !BF_MEMORY_NO_DEFAULT_HEAP
 namespace Memory
 {
-  IAllocator& DefaultHeap() noexcept;
+  IPolymorphicAllocator& DefaultHeap() noexcept;
 }  // namespace Memory
 #endif
 

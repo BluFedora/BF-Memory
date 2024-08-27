@@ -11,7 +11,7 @@
 #ifndef LIB_FOUNDATION_MEMORY_SMART_POINTER_HPP
 #define LIB_FOUNDATION_MEMORY_SMART_POINTER_HPP
 
-#include "memory/allocation.hpp"     // IAllocator, bfMemAllocateArray, bfMemDeallocateArray, bfMemAllocateObject, bfMemDeallocateObject
+#include "memory/allocation.hpp"     // IPolymorphicAllocator, bfMemAllocateArray, bfMemDeallocateArray, bfMemAllocateObject, bfMemDeallocateObject
 #include "memory/stl_allocator.hpp"  // StlAllocator
 
 #include <memory>       // shared_ptr, allocate_shared, unique_ptr

@@ -215,8 +215,6 @@ namespace Memory
         LockPolicy::Unlock();
       }
     }
-
-    operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
 
 }  // namespace Memory

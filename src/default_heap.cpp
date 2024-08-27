@@ -42,10 +42,9 @@ using DefaultHeap = BaseDefaultHeap<Memory::AllocationMarkPolicy::MARK, Memory::
 using DefaultHeap = BaseDefaultHeap<Memory::AllocationMarkPolicy::UNMARKED, Memory::BoundCheckingPolicy::UNCHECKED>;
 #endif
 
-static DefaultHeap s_DefaultHeapImpl = {};
-static IAllocator  s_DefaultHeap     = s_DefaultHeapImpl;
+static PolymorphicAllocator<DefaultHeap> s_DefaultHeap = {};
 
-IAllocator& Memory::DefaultHeap() noexcept
+IPolymorphicAllocator& Memory::DefaultHeap() noexcept
 {
   return s_DefaultHeap;
 }

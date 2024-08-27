@@ -5,7 +5,7 @@
 #include "memory/memory_api.hpp"  // bfMemAllocate, bfMemDeallocate
 
 Memory::GrowingPoolAllocator::GrowingPoolAllocator(
- IAllocator&       parent_allocator,
+ IPolymorphicAllocator&       parent_allocator,
  const MemoryIndex block_size,
  const MemoryIndex block_alignment,
  const MemoryIndex num_blocks_per_chunk) noexcept :

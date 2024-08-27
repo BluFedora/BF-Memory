@@ -27,11 +27,11 @@ namespace bf
   template<typename T>
   struct ScopedBuffer
   {
-    IAllocator& memory;
+    IPolymorphicAllocator& memory;
     T*          buffer;
     std::size_t num_elements;
 
-    ScopedBuffer(IAllocator& memory = Memory::DefaultHeap(), std::size_t in_num_elements = 0u) :
+    ScopedBuffer(IPolymorphicAllocator& memory = Memory::DefaultHeap(), std::size_t in_num_elements = 0u) :
       memory{memory},
       buffer{nullptr},
       num_elements{0u}

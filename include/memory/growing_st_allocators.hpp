@@ -11,7 +11,7 @@
 #ifndef LIB_FOUNDATION_MEMORY_GROWING_ST_ALLOCATORS_HPP
 #define LIB_FOUNDATION_MEMORY_GROWING_ST_ALLOCATORS_HPP
 
-#include "basic_types.hpp"  // IAllocator, MemoryIndex
+#include "basic_types.hpp"  // IPolymorphicAllocator, MemoryIndex
 
 namespace Memory
 {
@@ -31,7 +31,7 @@ namespace Memory
     };
 
    private:
-    IAllocator&         m_ParentAllocator;
+    IPolymorphicAllocator&         m_ParentAllocator;
     MemoryIndex         m_BlockSize;
     MemoryIndex         m_Alignment;
     MemoryIndex         m_ChunkMemSize;
@@ -40,7 +40,7 @@ namespace Memory
 
    public:
     GrowingPoolAllocator(
-     IAllocator&       parent_allocator,
+     IPolymorphicAllocator&       parent_allocator,
      const MemoryIndex block_size,
      const MemoryIndex block_alignment,
      const MemoryIndex num_blocks_per_chunk) noexcept;
@@ -51,8 +51,6 @@ namespace Memory
     void             FreeMemory() noexcept;
 
     ~GrowingPoolAllocator() noexcept { FreeMemory(); }
-
-    operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
 
   template<MemoryIndex BlockSize, MemoryIndex BlockAlignment, MemoryIndex NumBlocksPerChunk>
@@ -63,7 +61,7 @@ namespace Memory
     static_assert(BlockAlignment > 0u, "BlockAlignment must be greater than alignof(void*).");
 
    public:
-    StaticGrowingPoolAllocator(IAllocator& parent_allocator) :
+    StaticGrowingPoolAllocator(IPolymorphicAllocator& parent_allocator) :
       GrowingPoolAllocator(parent_allocator, BlockSize, BlockAlignment, NumBlocksPerChunk)
     {
     }

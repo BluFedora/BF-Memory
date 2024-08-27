@@ -49,8 +49,6 @@ namespace Memory
     bool             CanServiceAllocation(const MemoryIndex size, const MemoryIndex alignment) const noexcept;
     AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info */) noexcept;
     void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
-
-    operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
 
   inline LinearAllocator LinearAllocatorFromMemoryRequirements(void* const buffer, const MemoryRequirements mem_reqs)
@@ -124,8 +122,6 @@ namespace Memory
 
     AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info  */) noexcept;
     void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
-
-    operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
 
   //-------------------------------------------------------------------------------------//
@@ -172,8 +168,6 @@ namespace Memory
     void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
 
     static PoolAllocatorSetupResult SetupPool(byte* const memory_block, const MemoryIndex memory_size, const MemoryIndex block_size, const MemoryIndex alignment) noexcept;
-
-    operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
 
   /*!
@@ -233,8 +227,6 @@ namespace Memory
    private:
     AllocationResult AllocateInternal(const MemoryIndex size) noexcept;
     void             DeallocateInternal(void* const ptr, const MemoryIndex size) noexcept;
-
-    operator IAllocator() { return IAllocator::BasicAllocatorConvert(*this); }
   };
 
 }  // namespace Memory

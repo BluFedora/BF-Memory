@@ -136,7 +136,7 @@ struct TaggedMemoryRequirements : public MemoryRequirements
 
 /*!
  * @brief
- *   The result of an allocation from an IAllocator.
+ *   The result of an allocation from an IPolymorphicAllocator.
  */
 struct AllocationResult
 {
@@ -184,117 +184,128 @@ struct AllocationSourceInfo
   AllocationSourceInfo {}
 #endif
 
-/*!
- * @brief
- *   Function used to allocate memory.
- *
- * @param allocator_state
- *   The allocator to request a memory block from.
- *
- * @param size
- *   The number of bytes requested to allocate.
- *
- * @param alignment
- *   Required alignment of the returned block.
- *
- * @return
- *    On Success: An AllocationResult with a pointer to the block of memory and number of bytes
- *                available (could be greater than \p size).
- *    On Failure: An AllocationResult with a nullptr and num_bytes == 0u;
- */
-using AllocateFn = AllocationResult (*)(
- void* const                 allocator_state,
- const MemoryIndex           size,
- const MemoryIndex           alignment,
- const AllocationSourceInfo& source_info);
-
-/*!
- * @brief
- *   Function used to free memory allocated from `MemAllocFn`.
- *
- * @param allocator_state
- *   The allocator to return the memory block to.
- *
- * @param ptr
- *   Allocated region to free.
- *
- * @param size
- *   Must be some number between the requested number of bytes and the number of returned bytes.
- *
- * @param alignment
- *   Must be the same alignment passed into the allocation function.
- */
-using DeallocateFn = void (*)(void* const allocator_state, void* const ptr, const MemoryIndex size, const MemoryIndex alignment);
-
-struct IAllocator
+enum class AllocationOp : MemoryIndex
 {
-  AllocateFn   allocate;
-  DeallocateFn deallocate;
-  void*        state;
+  DO_ALLOCATE   = 0,
+  DO_DEALLOCATE = 1,
+};
 
-  IAllocator()                                 = default;
-  IAllocator(const IAllocator& rhs)            = default;
-  IAllocator(IAllocator&& rhs)                 = default;
-  IAllocator& operator=(const IAllocator& rhs) = default;
-  IAllocator& operator=(IAllocator&& rhs)      = default;
+/*!
+ * @brief
+ *   ptr is a AllocationSourceInfo* ptr when op == DO_ALLOCATE.
+ */
+using PolymorphicAllocatorFn = AllocationResult (*)(MemoryIndex size, MemoryIndex alignment, void* const ptr, const AllocationOp op, void* const self);
 
-  IAllocator(void* const        state,
-             const AllocateFn   allocate_fn,
-             const DeallocateFn deallocate_fn) :
-    allocate{allocate_fn},
-    deallocate{deallocate_fn},
-    state{state}
+/*!
+ * @brief
+ *   Type erased polymorphic allocator, unlike AllocatorView this in meant for long term storage.
+ */
+struct IPolymorphicAllocator
+{
+  PolymorphicAllocatorFn allocate_fn;
+
+  IPolymorphicAllocator(const IPolymorphicAllocator& rhs)            = delete;
+  IPolymorphicAllocator(IPolymorphicAllocator&& rhs)                 = delete;
+  IPolymorphicAllocator& operator=(const IPolymorphicAllocator& rhs) = delete;
+  IPolymorphicAllocator& operator=(IPolymorphicAllocator&& rhs)      = delete;
+
+  IPolymorphicAllocator(const PolymorphicAllocatorFn allocate_fn) :
+    allocate_fn{allocate_fn}
   {
   }
 
-  AllocationResult Allocate(const MemoryIndex           size,
-                            const MemoryIndex           alignment,
-                            const AllocationSourceInfo& source_info) const noexcept
+  AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) noexcept
   {
-    return allocate(state, size, alignment, source_info);
+    return allocate_fn(size, alignment, const_cast<void*>(static_cast<const void*>(&source_info)), AllocationOp::DO_ALLOCATE, this);
   }
 
-  void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) const noexcept
+  void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
   {
-    return deallocate(state, ptr, size, alignment);
-  }
-
-  template<typename BasicAllocator>
-  static IAllocator BasicAllocatorConvert(BasicAllocator& allocator)
-  {
-    return IAllocator(
-     &allocator,
-     [](void* const                 allocator_state,
-        const MemoryIndex           size,
-        const MemoryIndex           alignment,
-        const AllocationSourceInfo& source_info) -> AllocationResult {
-       return static_cast<BasicAllocator*>(allocator_state)->Allocate(size, alignment, source_info);
-     },
-     [](void* const allocator_state, void* const ptr, const MemoryIndex size, const MemoryIndex alignment) -> void {
-       return static_cast<BasicAllocator*>(allocator_state)->Deallocate(ptr, size, alignment);
-     });
+    allocate_fn(size, alignment, ptr, AllocationOp::DO_DEALLOCATE, this);
   }
 };
 
 /*!
  * @brief
- *   Type erased polymorphic view for an allocator.
- *   To be used as a parameter type.
+ *   Type erased polymorphic view for an allocator to be used as a parameter type.
  */
-using AllocatorView = IAllocator;
-
-// Helper Class for allowing both polymorphic and static interface.
-template<typename BaseAllocator>
-class Allocator : public IAllocator
-  , public BaseAllocator
+struct AllocatorView
 {
- public:
+  void*                  self;
+  PolymorphicAllocatorFn allocate_fn;
+
+  AllocatorView(IPolymorphicAllocator& allocator) :
+    self{&allocator},
+    allocate_fn{allocator.allocate_fn}
+  {
+  }
+
+  template<typename AllocatorConcept>
+  AllocatorView(AllocatorConcept& allocator) :
+    self{&allocator},
+    allocate_fn{+[](MemoryIndex size, MemoryIndex alignment, void* const ptr, const AllocationOp op, void* const self) -> AllocationResult {
+      AllocatorConcept& typed_self = *static_cast<AllocatorConcept*>(self);
+
+      if (op == AllocationOp::DO_ALLOCATE)
+      {
+        return typed_self.Allocate(size, alignment, *static_cast<const AllocationSourceInfo*>(ptr));
+      }
+      else
+      {
+        typed_self.Deallocate(ptr, size, alignment);
+      }
+
+      return AllocationResult::Null();
+    }}
+  {
+  }
+
+  AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) const noexcept
+  {
+    return allocate_fn(size, alignment, const_cast<void*>(static_cast<const void*>(&source_info)), AllocationOp::DO_ALLOCATE, self);
+  }
+
+  void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) const noexcept
+  {
+    allocate_fn(size, alignment, ptr, AllocationOp::DO_DEALLOCATE, self);
+  }
+};
+
+/*!
+ * @brief
+ *   Helper class for allowing both polymorphic and static interface.
+ *
+ * @tparam AllocatorConcept
+ *   The type of allocator this will be implemented with.
+ */
+template<typename BaseAllocator>
+// clang-format off
+struct PolymorphicAllocator : public IPolymorphicAllocator, public BaseAllocator
+// clang-format on
+{
   template<typename... Args>
-  Allocator(Args&&... args) :
-    IAllocator(IAllocator::BasicAllocatorConvert(static_cast<BaseAllocator&>(*this))),
+  PolymorphicAllocator(Args&&... args) :
+    IPolymorphicAllocator(+[](MemoryIndex size, MemoryIndex alignment, void* const ptr, const AllocationOp op, void* const self) -> AllocationResult {
+      // Polymorphic Interface
+
+      PolymorphicAllocator<BaseAllocator>& typed_self = *static_cast<PolymorphicAllocator<BaseAllocator>*>(static_cast<IPolymorphicAllocator*>(self));
+
+      if (op == AllocationOp::DO_ALLOCATE)
+      {
+        return typed_self.Allocate(size, alignment, *static_cast<const AllocationSourceInfo*>(ptr));
+      }
+      else
+      {
+        typed_self.Deallocate(ptr, size, alignment);
+      }
+
+      return AllocationResult::Null();
+    }),
     BaseAllocator{static_cast<decltype(args)&&>(args)...}
   {
   }
+
+  // Static Interface
 
   AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) noexcept
   {
