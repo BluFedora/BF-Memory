@@ -11,6 +11,8 @@
 #ifndef LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP
 #define LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP
 
+#include "assertion.hpp"  // bfMemAssert
+
 #ifndef BF_MEMORY_ALLOCATION_INFO
 #define BF_MEMORY_ALLOCATION_INFO 1
 #endif
@@ -271,24 +273,143 @@ struct AllocatorView
   }
 };
 
+enum class AllocationMarkPolicy : bool
+{
+  UNMARKED = false,
+  MARKED   = true,
+};
+
+enum class BoundCheckingPolicy : bool
+{
+  UNCHECKED = false,
+  CHECKED   = true,
+};
+
+struct MemoryTrackAllocate
+{
+  AllocationResult     allocation;
+  MemoryIndex          requested_bytes;
+  MemoryIndex          alignment;
+  AllocationSourceInfo source_info;
+};
+
+struct MemoryTrackDeallocate
+{
+  void*       ptr;
+  MemoryIndex num_bytes;
+  MemoryIndex alignment;
+};
+
+namespace Memory
+{
+  static constexpr AllocationMarkPolicy DefaultMarkPolicy           = BF_MEMORY_ASSERTIONS != 0 ? AllocationMarkPolicy::MARKED : AllocationMarkPolicy::UNMARKED;
+  static constexpr BoundCheckingPolicy  DefaultBoundsCheckingPolicy = BF_MEMORY_ASSERTIONS != 0 ? BoundCheckingPolicy::CHECKED : BoundCheckingPolicy::UNCHECKED;
+
+  static constexpr byte GuardBytePattern     = 0xAB;
+  static constexpr byte AllocatedBytePattern = 0xCD;
+  static constexpr byte FreeBytePattern      = 0xDD;
+
+  template<BoundCheckingPolicy BoundCheck>
+  void GuardBytes(byte* const bytes, const MemoryIndex num_bytes) noexcept
+  {
+    if constexpr (BoundCheck == BoundCheckingPolicy::CHECKED)
+    {
+      for (MemoryIndex byte_index = 0u; byte_index < num_bytes; ++byte_index)
+      {
+        bytes[byte_index] = GuardBytePattern;
+      }
+    }
+  }
+
+  template<BoundCheckingPolicy BoundCheck>
+  void CheckGuardBytes(const byte* const bytes, const MemoryIndex num_bytes) noexcept
+  {
+    if constexpr (BoundCheck == BoundCheckingPolicy::CHECKED)
+    {
+      for (MemoryIndex byte_index = 0u; byte_index < num_bytes; ++byte_index)
+      {
+        bfMemAssert(bytes[byte_index] == GuardBytePattern, "Memory guard byte check failure.");
+      }
+    }
+  }
+
+  template<AllocationMarkPolicy MarkPolicy>
+  void MarkAllocatedBytes(byte* const bytes, const MemoryIndex num_bytes) noexcept
+  {
+    if constexpr (MarkPolicy == AllocationMarkPolicy::MARKED)
+    {
+      for (MemoryIndex byte_index = 0u; byte_index < num_bytes; ++byte_index)
+      {
+        bytes[byte_index] = AllocatedBytePattern;
+      }
+    }
+  }
+
+  template<AllocationMarkPolicy MarkPolicy>
+  void MarkFreedBytes(byte* const bytes, const MemoryIndex num_bytes) noexcept
+  {
+    if constexpr (MarkPolicy == AllocationMarkPolicy::MARKED)
+    {
+      for (MemoryIndex byte_index = 0u; byte_index < num_bytes; ++byte_index)
+      {
+        bytes[byte_index] = FreeBytePattern;
+      }
+    }
+  }
+
+  struct NoLock
+  {
+    void Lock() const noexcept {}
+    void Unlock() const noexcept {}
+  };
+
+  struct NoMemoryTracking
+  {
+    void TrackAllocate(const MemoryTrackAllocate& allocate_info) const noexcept { (void)allocate_info; }
+    void TrackDeallocate(const MemoryTrackDeallocate& deallocate_info) const noexcept { (void)deallocate_info; }
+  };
+}  // namespace Memory
+
 /*!
  * @brief
- *   Helper class for allowing both polymorphic and static interface.
+ *   Adaptor class for allowing both polymorphic and static interface,
+ *   and adding extra features to a `BaseAllocator`.
  *
- * @tparam AllocatorConcept
+ * @tparam BaseAllocator
  *   The type of allocator this will be implemented with.
+ *
+ * @tparam AllocationTrackingPolicy
+ *
+ * @tparam LockPolicy
+ *   Will call `LockPolicy::Lock` and `LockPolicy::Unlock` around any allocation or allocation tracking operation.
+ *
+ * @tparam MarkPolicy
+ *   Whether or not to mark each allocation and deallocation with special byte patterns.
+ *
+ * @tparam BoundCheck
+ *   Whether or not to add extra guard bytes for detecting heap corruption.
  */
-template<typename BaseAllocator>
+template<typename BaseAllocator,
+         AllocationMarkPolicy MarkPolicy   = Memory::DefaultMarkPolicy,
+         BoundCheckingPolicy  BoundCheck   = Memory::DefaultBoundsCheckingPolicy,
+         typename AllocationTrackingPolicy = Memory::NoMemoryTracking,
+         typename LockPolicy               = Memory::NoLock>
 // clang-format off
-struct PolymorphicAllocator : public IPolymorphicAllocator, public BaseAllocator
+struct Allocator : public IPolymorphicAllocator,
+                   public BaseAllocator,
+                   public AllocationTrackingPolicy,
+                   public LockPolicy
 // clang-format on
 {
+  static constexpr bool MemoryMarkingEnabled = MarkPolicy != AllocationMarkPolicy::UNMARKED;
+  static constexpr bool BoundCheckingEnabled = BoundCheck != BoundCheckingPolicy::UNCHECKED;
+
   template<typename... Args>
-  PolymorphicAllocator(Args&&... args) :
+  Allocator(Args&&... args) :
     IPolymorphicAllocator(+[](MemoryIndex size, MemoryIndex alignment, void* const ptr, const AllocationOp op, void* const self) -> AllocationResult {
       // Polymorphic Interface
 
-      PolymorphicAllocator<BaseAllocator>& typed_self = *static_cast<PolymorphicAllocator<BaseAllocator>*>(static_cast<IPolymorphicAllocator*>(self));
+      Allocator<BaseAllocator>& typed_self = *static_cast<Allocator<BaseAllocator>*>(static_cast<IPolymorphicAllocator*>(self));
 
       if (op == AllocationOp::DO_ALLOCATE)
       {
@@ -307,14 +428,92 @@ struct PolymorphicAllocator : public IPolymorphicAllocator, public BaseAllocator
 
   // Static Interface
 
-  AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) noexcept
+  AllocationResult Allocate(const MemoryIndex size, MemoryIndex alignment, const AllocationSourceInfo& source_info) noexcept
   {
-    return static_cast<BaseAllocator*>(this)->Allocate(size, alignment, source_info);
+    if constexpr (BoundCheckingEnabled)
+    {
+      if (alignment < alignof(MemoryIndex))
+      {
+        alignment = alignof(MemoryIndex);
+      }
+    }
+
+    const MemoryIndex guard_size = BoundCheckingEnabled ? alignment : 0u;
+    const MemoryIndex total_size = guard_size + guard_size + size + guard_size;
+
+    LockPolicy::Lock();
+
+    const AllocationResult allocation = static_cast<BaseAllocator*>(this)->Allocate(total_size, alignment, source_info);
+
+    if (allocation)
+    {
+      AllocationTrackingPolicy::TrackAllocate(MemoryTrackAllocate{allocation, total_size, alignment, source_info});
+    }
+
+    LockPolicy::Unlock();
+
+    if (allocation)
+    {
+      const MemoryIndex extra_bytes       = allocation.num_bytes - total_size;
+      byte* const       bytes             = static_cast<byte*>(allocation.ptr);
+      const MemoryIndex user_memory_size  = size + extra_bytes;
+      byte* const       size_header       = bytes;
+      byte* const       guard_bytes_front = size_header + guard_size;
+      byte* const       mark_bytes        = guard_bytes_front + guard_size;
+      byte* const       guard_bytes_back  = mark_bytes + user_memory_size;
+
+      if constexpr (BoundCheckingEnabled)
+      {
+        *reinterpret_cast<MemoryIndex*>(size_header) = user_memory_size;
+      }
+
+      Memory::GuardBytes<BoundCheck>(guard_bytes_front, guard_size);
+      Memory::MarkAllocatedBytes<MarkPolicy>(mark_bytes, user_memory_size);
+      Memory::GuardBytes<BoundCheck>(guard_bytes_back, guard_size);
+
+      return AllocationResult(mark_bytes, user_memory_size);
+    }
+
+    return AllocationResult::Null();
   }
 
-  void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
+  void Deallocate(void* const ptr, const MemoryIndex size, MemoryIndex alignment) noexcept
   {
-    return static_cast<BaseAllocator*>(this)->Deallocate(ptr, size, alignment);
+    if (ptr)
+    {
+      if constexpr (BoundCheckingEnabled)
+      {
+        if (alignment < alignof(MemoryIndex))
+        {
+          alignment = alignof(MemoryIndex);
+        }
+      }
+
+      const MemoryIndex guard_size        = BoundCheckingEnabled ? alignment : 0u;
+      const MemoryIndex total_size        = guard_size + guard_size + size + guard_size;
+      byte* const       bytes             = static_cast<byte*>(ptr) - guard_size - guard_size;
+      byte* const       size_header       = bytes;
+      byte* const       guard_bytes_front = size_header + guard_size;
+      byte* const       mark_bytes        = guard_bytes_front + guard_size;
+
+      if constexpr (BoundCheckingEnabled)
+      {
+        const MemoryIndex user_memory_size = *reinterpret_cast<const MemoryIndex*>(size_header);
+        byte* const       guard_bytes_back = mark_bytes + user_memory_size;
+
+        Memory::CheckGuardBytes<BoundCheck>(guard_bytes_front, guard_size);
+        Memory::CheckGuardBytes<BoundCheck>(guard_bytes_back, guard_size);
+      }
+
+      Memory::MarkFreedBytes<MarkPolicy>(mark_bytes, size);
+
+      LockPolicy::Lock();
+      {
+        AllocationTrackingPolicy::TrackDeallocate(MemoryTrackDeallocate{bytes, total_size, alignment});
+        static_cast<BaseAllocator*>(this)->Deallocate(bytes, total_size, alignment);
+      }
+      LockPolicy::Unlock();
+    }
   }
 };
 

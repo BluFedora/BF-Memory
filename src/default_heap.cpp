@@ -12,8 +12,6 @@
 
 #if !BF_MEMORY_NO_DEFAULT_HEAP
 
-#include "memory/memory_manager.hpp"  // MemoryManager
-
 #include <new>  // align_val_t, nothrow
 
 struct CxxFreeStoreAllocator
@@ -33,16 +31,13 @@ struct CxxFreeStoreAllocator
   }
 };
 
-template<Memory::AllocationMarkPolicy MarkPolicy, Memory::BoundCheckingPolicy BoundCheck>
-using BaseDefaultHeap = Memory::MemoryManager<CxxFreeStoreAllocator, MarkPolicy, BoundCheck, Memory::NoMemoryTracking, Memory::NoLock>;
-
 #if BF_MEMORY_DEBUG_HEAP
-using DefaultHeap = BaseDefaultHeap<Memory::AllocationMarkPolicy::MARK, Memory::BoundCheckingPolicy::CHECKED>;
+using HeapAllocator = Allocator<CxxFreeStoreAllocator, AllocationMarkPolicy::MARKED, BoundCheckingPolicy::CHECKED, Memory::NoMemoryTracking, Memory::NoLock>;
 #else
-using DefaultHeap = BaseDefaultHeap<Memory::AllocationMarkPolicy::UNMARKED, Memory::BoundCheckingPolicy::UNCHECKED>;
+using HeapAllocator = Allocator<CxxFreeStoreAllocator, AllocationMarkPolicy::UNMARKED, BoundCheckingPolicy::UNCHECKED, Memory::NoMemoryTracking, Memory::NoLock>;
 #endif
 
-static PolymorphicAllocator<DefaultHeap> s_DefaultHeap = {};
+static HeapAllocator s_DefaultHeap = {};
 
 IPolymorphicAllocator& Memory::DefaultHeap() noexcept
 {

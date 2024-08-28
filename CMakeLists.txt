@@ -19,7 +19,6 @@ add_library(
       "include/memory/fixed_mt_allocators.hpp"
       "include/memory/growing_st_allocators.hpp"
       "include/memory/memory_api.hpp"
-      "include/memory/memory_manager.hpp"
       "include/memory/scoped_buffer.hpp"
       "include/memory/smart_pointer.hpp"
       "include/memory/stl_allocator.hpp"
@@ -59,6 +58,6 @@ set_target_properties(
 target_compile_options(
   LibFoundation_Memory
   PRIVATE
-    $<$<CXX_COMPILER_ID:MSVC>:/W4> # /WX
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>                             # /WX
     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic> # -Werror
 )
