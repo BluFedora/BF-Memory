@@ -60,6 +60,12 @@ namespace Memory
   }
 
   template<typename T>
+  constexpr void DestructAs(void* const ptr)
+  {
+    Destruct(static_cast<T*>(ptr));
+  }
+
+  template<typename T>
   constexpr void DestructRange(T* const range_bgn, const T* const range_end)
   {
     for (T* element = range_bgn; element != range_end; ++element)

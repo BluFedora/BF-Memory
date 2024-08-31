@@ -242,23 +242,16 @@ struct AllocatorView
   {
   }
 
+  AllocatorView(const AllocatorView& rhs)            = default;
+  AllocatorView(AllocatorView&& rhs)                 = default;
+  AllocatorView& operator=(const AllocatorView& rhs) = default;
+  AllocatorView& operator=(AllocatorView&& rhs)      = default;
+  ~AllocatorView()                                   = default;
+
   template<typename AllocatorConcept>
-  AllocatorView(AllocatorConcept& allocator) :
+  explicit AllocatorView(AllocatorConcept& allocator) :
     self{&allocator},
-    allocate_fn{+[](MemoryIndex size, MemoryIndex alignment, void* const ptr, const AllocationOp op, void* const self) -> AllocationResult {
-      AllocatorConcept& typed_self = *static_cast<AllocatorConcept*>(self);
-
-      if (op == AllocationOp::DO_ALLOCATE)
-      {
-        return typed_self.Allocate(size, alignment, *static_cast<const AllocationSourceInfo*>(ptr));
-      }
-      else
-      {
-        typed_self.Deallocate(ptr, size, alignment);
-      }
-
-      return AllocationResult::Null();
-    }}
+    allocate_fn{&AllocateImpl<AllocatorConcept>}
   {
   }
 
@@ -270,6 +263,23 @@ struct AllocatorView
   void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) const noexcept
   {
     allocate_fn(size, alignment, ptr, AllocationOp::DO_DEALLOCATE, self);
+  }
+
+  template<typename AllocatorConcept>
+  static AllocationResult AllocateImpl(MemoryIndex size, MemoryIndex alignment, void* const ptr, const AllocationOp op, void* const self)
+  {
+    AllocatorConcept& typed_self = *static_cast<AllocatorConcept*>(self);
+
+    if (op == AllocationOp::DO_ALLOCATE)
+    {
+      return typed_self.Allocate(size, alignment, *static_cast<const AllocationSourceInfo*>(ptr));
+    }
+    else
+    {
+      typed_self.Deallocate(ptr, size, alignment);
+    }
+
+    return AllocationResult::Null();
   }
 };
 
