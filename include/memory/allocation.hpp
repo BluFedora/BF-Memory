@@ -82,9 +82,9 @@ namespace Memory
 
 /*!
  * @brief
- *   Allocates memory from \p self, returns a block of memory with a minimum size of \p size and an alignment of \p alignment.
+ *   Allocates memory from \p allocator, returns a block of memory with a minimum size of \p size and an alignment of \p alignment.
  *
- * @param self
+ * @param allocator
  *   The allocator to request memory from.
  *
  * @param size
@@ -150,7 +150,7 @@ void bfMemDeallocate(AllocatorConcept&& allocator, void* const ptr, const Memory
  * @tparam ...Args
  *   The constructor arguments types to pass to T.
  *
- * @param self
+ * @param allocator
  *   The allocator to request memory from.
  *
  * @param ...args
@@ -175,7 +175,7 @@ T* bfMemAllocateObject(AllocatorConcept&& allocator, Args&&... args)
  * @tparam T
  *   The type of object.
  *
- * @param self
+ * @param allocator
  *   The allocator to return memory to.
  *
  * @param ptr
@@ -227,12 +227,18 @@ T* bfMemArrayConstruct(const AllocationResult mem_block, const MemoryIndex num_e
  * @tparam init
  *   Initialization policy to apply to the array.
  *
- * @param self
+ * @param allocator
  *   The allocator to request memory from.
  *
  * @param num_elements
  *   The number of elements in the array.
  *
+ * @param alignment
+ *   Alignment of the first element in the array.
+ *
+ * @param source_info
+ *   Auto filled in source info data.
+ * 
  * @return
  *   On Success: An array of \p num_elements length.
  *   On Failure: nullptr
@@ -257,12 +263,17 @@ T* bfMemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elemen
  * @tparam destroy
  *   Destruction policy.
  *
- * @param self
+ * @param allocator
  *   The allocator to return memory to.
  *
  * @param array
+ *   Pointer to the first element of the array.
+ * 
  * @param num_elements
  *   The number of elements in the array.
+ *
+ * @param alignment
+ *   Alignment of the first element in the array.
  *
  * @see bfMemAllocateArray
  */
