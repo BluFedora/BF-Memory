@@ -49,37 +49,37 @@ namespace Memory
 
   /*!
    * @brief
+   *   This prefixes all allocations made from `bfMemMakeUnique`.
+   */
+  struct UniquePtrHeader
+  {
+    using UniquePtrDeleterFn = void (*)(UniquePtrHeader* const header, void* const ptr);
+
+    void*              allocator;
+    MemoryIndex        num_objects;
+    UniquePtrDeleterFn deleter;
+  };
+
+  /*!
+   * @brief
    *   Polymorphic deleter for UniquePtr.
    */
   class BaseUniquePtrDeleter
   {
-    using UniquePtrObjectDeleterFn = void (*)(void* const ptr, void* const allocator, const MemoryIndex length);
-
    private:
-    void*                    m_Allocator;
-    MemoryIndex              m_Length;
-    UniquePtrObjectDeleterFn m_Deleter;
+    UniquePtrHeader* m_Header;
 
    public:
-    constexpr BaseUniquePtrDeleter() noexcept :
-      m_Allocator{nullptr},
-      m_Length{0u},
-      m_Deleter{nullptr}
+    constexpr BaseUniquePtrDeleter(UniquePtrHeader* const header = nullptr) noexcept :
+      m_Header{header}
     {
     }
 
-    constexpr BaseUniquePtrDeleter(void* const allocator, const MemoryIndex length, const UniquePtrObjectDeleterFn deleter_fn) noexcept :
-      m_Allocator{allocator},
-      m_Length{length},
-      m_Deleter{deleter_fn}
-    {
-    }
+    constexpr MemoryIndex length() const noexcept { return m_Header->num_objects; }
 
-    constexpr MemoryIndex length() const noexcept { return m_Length; }
-
-    void operator()(void* const ptr) noexcept
+    void operator()(void* const ptr) const noexcept
     {
-      m_Deleter(ptr, m_Allocator, m_Length);
+      m_Header->deleter(m_Header, ptr);
     }
   };
 
@@ -96,26 +96,6 @@ namespace Memory
     {
     }
   };
-
-  template<typename T, typename AllocatorConcept>
-  UniquePtrDeleter<T> MakeUniquePtrDeleter(void* const allocator, const MemoryIndex length)
-  {
-    return UniquePtrDeleter<T>(
-     allocator, length, +[](void* const ptr, void* const allocator, const MemoryIndex length) -> void {
-       std::remove_extent_t<T>* const typed_ptr       = static_cast<std::remove_extent_t<T>*>(ptr);
-       AllocatorConcept&              typed_allocator = *static_cast<AllocatorConcept*>(allocator);
-
-       if constexpr (std::is_array_v<T>)
-       {
-         Memory::DestructRange(typed_ptr, typed_ptr + length);
-         bfMemDeallocateArray(typed_allocator, typed_ptr, length);
-       }
-       else
-       {
-         bfMemDeallocateObject(typed_allocator, typed_ptr);
-       }
-     });
-  }
 }  // namespace Memory
 
 // Articles on std::shared_ptr
@@ -206,7 +186,9 @@ SharedPtr<T[]> bfMemMakeSharedAliasArray(SharedPtr<U> owner, T* const ptr)
  *   The normal unique_ptr doesn't have an specialization for a bounded array and will try to use
  *   the singular object specialization which calls the incorrect delete.
  *
- *   One additional feature is the ability to query the number of elements the UniquePtr<T[]> has.
+ *   Additional Features:
+ *     - The ability to query the number of elements the UniquePtr<T[]> has.
+ *     - No virtual destructor needed if this is a UniquePtr<Base> is created from a UniquePtr<Derived>.
  *
  *   ```
  *   UniquePtr<byte[]> ptr = ...;
@@ -215,7 +197,6 @@ SharedPtr<T[]> bfMemMakeSharedAliasArray(SharedPtr<U> owner, T* const ptr)
  *
  * @tparam T
  *   The type of object stored in this pointer.
- *
  */
 template<typename T>
 struct UniquePtr : public std::unique_ptr<T, Memory::UniquePtrDeleter<T>>
@@ -232,10 +213,54 @@ struct UniquePtr : public std::unique_ptr<T, Memory::UniquePtrDeleter<T>>
   constexpr MemoryIndex   length() const noexcept { return this->get_deleter().length(); }
 };
 
+namespace Memory
+{
+  template<typename T, typename AllocatorConcept>
+  UniquePtr<T> MakeUniqueImpl(AllocatorConcept* const allocator, const MemoryIndex num_objects)
+  {
+    using pointer = typename UniquePtrDeleter<T>::pointer;
+
+    static constexpr MemoryIndex alignment = alignof(T) < alignof(UniquePtrHeader) ? alignof(UniquePtrHeader) : alignof(T);
+
+    const MemoryIndex header_size  = Memory::AlignSize(sizeof(UniquePtrHeader), alignment);
+    const MemoryIndex objects_size = num_objects * sizeof(std::remove_pointer_t<pointer>);
+    const MemoryIndex total_size   = header_size + objects_size;
+    void* const       allocation   = bfMemAllocate(*allocator, total_size, alignment).ptr;
+
+    if (allocation)
+    {
+      UniquePtrHeader* const header = static_cast<UniquePtrHeader*>(allocation);
+
+      header->allocator   = allocator;
+      header->num_objects = num_objects;
+      header->deleter     = +[](UniquePtrHeader* const header, void* const ptr) {
+        const MemoryIndex header_size  = Memory::AlignSize(sizeof(UniquePtrHeader), alignment);
+        const MemoryIndex num_objects  = header->num_objects;
+        const MemoryIndex objects_size = num_objects * sizeof(std::remove_pointer_t<pointer>);
+        const MemoryIndex total_size   = header_size + objects_size;
+
+        Memory::DestructRange(static_cast<pointer>(ptr), static_cast<pointer>(ptr) + num_objects);
+        bfMemDeallocate(*static_cast<AllocatorConcept*>(header->allocator), header, total_size, alignment);
+      };
+
+      return UniquePtr<T>(reinterpret_cast<pointer>(header + 1), UniquePtrDeleter<T>(header));
+    }
+
+    return nullptr;
+  }
+}  // namespace Memory
+
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<!std::is_array_v<T>>, typename... Args>
 UniquePtr<T> bfMemMakeUnique(AllocatorConcept* const allocator, Args&&... args)
 {
-  return UniquePtr<T>(bfMemAllocateObject<T>(*allocator, std::forward<Args>(args)...), Memory::MakeUniquePtrDeleter<T, AllocatorConcept>(allocator, 1u));
+  UniquePtr<T> result = Memory::MakeUniqueImpl<T>(allocator, 1u);
+
+  if (result)
+  {
+    Memory::Construct<T>(result.get(), std::forward<Args>(args)...);
+  }
+
+  return result;
 }
 
 // TODO(SR): Add overloads with custom alignment.
@@ -243,15 +268,28 @@ UniquePtr<T> bfMemMakeUnique(AllocatorConcept* const allocator, Args&&... args)
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<Memory::is_unbounded_array_v<T>>>
 UniquePtr<T> bfMemMakeUnique(AllocatorConcept* const allocator, const MemoryIndex num_elements)
 {
-  return UniquePtr<T>(bfMemAllocateArray<std::remove_extent_t<T>, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements), Memory::MakeUniquePtrDeleter<T, AllocatorConcept>(allocator, num_elements));
+  UniquePtr<T> result = Memory::MakeUniqueImpl<T>(allocator, num_elements);
+
+  if (result)
+  {
+    Memory::DefaultConstructRange(result.get(), result.get() + num_elements);
+  }
+
+  return result;
 }
 
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<Memory::is_bounded_array_v<T>>>
 UniquePtr<T> bfMemMakeUnique(AllocatorConcept* const allocator)
 {
   constexpr MemoryIndex num_elements = std::extent_v<T>;
+  UniquePtr<T>          result       = Memory::MakeUniqueImpl<T>(allocator, num_elements);
 
-  return UniquePtr<T>(bfMemAllocateArray<std::remove_extent_t<T>, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements), Memory::MakeUniquePtrDeleter<T, AllocatorConcept>(allocator, num_elements));
+  if (result)
+  {
+    Memory::DefaultConstructRange(result.get(), result.get() + num_elements);
+  }
+
+  return result;
 }
 
 #undef IS_CXX20
