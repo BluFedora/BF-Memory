@@ -218,32 +218,31 @@ namespace Memory
   template<typename T, typename AllocatorConcept>
   UniquePtr<T> MakeUniqueImpl(AllocatorConcept* const allocator, const MemoryIndex num_objects)
   {
-    using pointer = typename UniquePtrDeleter<T>::pointer;
+    using pointer     = typename UniquePtrDeleter<T>::pointer;
+    using object_type = std::remove_pointer_t<pointer>;
 
-    static constexpr MemoryIndex alignment = alignof(T) < alignof(UniquePtrHeader) ? alignof(UniquePtrHeader) : alignof(T);
+    static constexpr MemoryIndex alignment   = alignof(T) < alignof(UniquePtrHeader) ? alignof(UniquePtrHeader) : alignof(T);
+    static constexpr MemoryIndex header_size = Memory::AlignSize(sizeof(UniquePtrHeader), alignment);
 
-    const MemoryIndex header_size  = Memory::AlignSize(sizeof(UniquePtrHeader), alignment);
-    const MemoryIndex objects_size = num_objects * sizeof(std::remove_pointer_t<pointer>);
+    const MemoryIndex objects_size = num_objects * sizeof(object_type);
     const MemoryIndex total_size   = header_size + objects_size;
-    void* const       allocation   = bfMemAllocate(*allocator, total_size, alignment).ptr;
 
-    if (allocation)
+    if (void* const allocation = bfMemAllocate(*allocator, total_size, alignment).ptr; allocation != nullptr)
     {
       UniquePtrHeader* const header = static_cast<UniquePtrHeader*>(allocation);
 
       header->allocator   = allocator;
       header->num_objects = num_objects;
       header->deleter     = +[](UniquePtrHeader* const header, void* const ptr) {
-        const MemoryIndex header_size  = Memory::AlignSize(sizeof(UniquePtrHeader), alignment);
         const MemoryIndex num_objects  = header->num_objects;
-        const MemoryIndex objects_size = num_objects * sizeof(std::remove_pointer_t<pointer>);
+        const MemoryIndex objects_size = num_objects * sizeof(object_type);
         const MemoryIndex total_size   = header_size + objects_size;
 
         Memory::DestructRange(static_cast<pointer>(ptr), static_cast<pointer>(ptr) + num_objects);
         bfMemDeallocate(*static_cast<AllocatorConcept*>(header->allocator), header, total_size, alignment);
       };
 
-      return UniquePtr<T>(reinterpret_cast<pointer>(header + 1), UniquePtrDeleter<T>(header));
+      return UniquePtr<T>(reinterpret_cast<pointer>(static_cast<byte*>(allocation) + header_size), UniquePtrDeleter<T>(header));
     }
 
     return nullptr;
