@@ -105,7 +105,12 @@ namespace Memory
 template<typename AllocatorConcept>
 AllocationResult bfMemAllocate(AllocatorConcept&& allocator, const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info)
 {
-  return allocator.Allocate(size, alignment, source_info);
+  if (size != 0)
+  {
+    return allocator.Allocate(size, alignment, source_info);
+  }
+
+  return AllocationResult::Null();
 }
 #define bfMemAllocate(allocator, size, alignment) (bfMemAllocate)((allocator), (size), (alignment), MemoryMakeAllocationSourceInfo())
 
@@ -238,7 +243,7 @@ T* bfMemArrayConstruct(const AllocationResult mem_block, const MemoryIndex num_e
  *
  * @param source_info
  *   Auto filled in source info data.
- * 
+ *
  * @return
  *   On Success: An array of \p num_elements length.
  *   On Failure: nullptr
@@ -268,7 +273,7 @@ T* bfMemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elemen
  *
  * @param array
  *   Pointer to the first element of the array.
- * 
+ *
  * @param num_elements
  *   The number of elements in the array.
  *
