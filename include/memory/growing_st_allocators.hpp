@@ -5,7 +5,7 @@
  * @brief
  *   Contains growing single threaded allocators.
  *
- * @copyright Copyright (c) 2023 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2023-2025 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef LIB_FOUNDATION_MEMORY_GROWING_ST_ALLOCATORS_HPP
@@ -31,19 +31,19 @@ namespace Memory
     };
 
    private:
-    IPolymorphicAllocator&         m_ParentAllocator;
-    MemoryIndex         m_BlockSize;
-    MemoryIndex         m_Alignment;
-    MemoryIndex         m_ChunkMemSize;
-    ChunkFooter*        m_Chunks;
-    PoolAllocatorBlock* m_PoolHead;
+    IPolymorphicAllocator& m_ParentAllocator;
+    MemoryIndex            m_BlockSize;
+    MemoryIndex            m_Alignment;
+    MemoryIndex            m_ChunkMemSize;
+    ChunkFooter*           m_Chunks;
+    PoolAllocatorBlock*    m_PoolHead;
 
    public:
     GrowingPoolAllocator(
-     IPolymorphicAllocator&       parent_allocator,
-     const MemoryIndex block_size,
-     const MemoryIndex block_alignment,
-     const MemoryIndex num_blocks_per_chunk) noexcept;
+     IPolymorphicAllocator& parent_allocator,
+     const MemoryIndex      block_size,
+     const MemoryIndex      block_alignment,
+     const MemoryIndex      num_blocks_per_chunk) noexcept;
 
     void             Clear() noexcept;
     AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) noexcept;
@@ -67,6 +67,9 @@ namespace Memory
     }
   };
 
+  template<typename T, MemoryIndex NumBlocksPerChunk>
+  using ObjectPool = StaticGrowingPoolAllocator<sizeof(T), alignof(T), NumBlocksPerChunk>;
+
 }  // namespace Memory
 
 #endif  // LIB_FOUNDATION_MEMORY_GROWING_ST_ALLOCATORS_HPP
@@ -75,7 +78,7 @@ namespace Memory
 /*
   MIT License
 
-  Copyright (c) 2023 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2025 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
