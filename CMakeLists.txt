@@ -19,7 +19,6 @@ add_library(
       "include/memory/fixed_mt_allocators.hpp"
       "include/memory/growing_st_allocators.hpp"
       "include/memory/memory_api.hpp"
-      "include/memory/scoped_buffer.hpp"
       "include/memory/smart_pointer.hpp"
       "include/memory/stl_allocator.hpp"
 

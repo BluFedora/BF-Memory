@@ -5,7 +5,7 @@
  * @brief
  *   Utilities for handling alignment of memory allocations.
  *
- * @copyright Copyright (c) 2023 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2023-2025 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef LIB_FOUNDATION_MEMORY_ALIGHNMENT_HPP
@@ -24,7 +24,7 @@ namespace Memory
   static constexpr MemoryIndex DefaultNewAlignment = alignof(std::max_align_t); //!< The alignment a pointer from new will have.
 #endif
 
-  static constexpr MemoryIndex DefaultMallocAlignment = alignof(std::max_align_t); //!< The alignment a pointer from malloc will have.
+  static constexpr MemoryIndex DefaultMallocAlignment = alignof(std::max_align_t); //!< The (minimum) alignment a pointer from malloc will have.
 
   static constexpr MemoryIndex DefaultAlignment = DefaultMallocAlignment < DefaultNewAlignment ? DefaultNewAlignment : DefaultMallocAlignment; //!< An address aligned to this value can support any non-overaligned datatype.
 
@@ -152,7 +152,7 @@ namespace Memory
 /*
   MIT License
 
-  Copyright (c) 2023 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2025 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

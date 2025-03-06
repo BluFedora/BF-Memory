@@ -35,22 +35,19 @@ namespace bf
 
 // TODO(SR): Add ZeroStruct and ByteCopyStruct.
 
-/*!
- * @brief
- *   Same as std::memcpy.
- *   Byte by byte copy from \p src to \p dst.
- *
- * @param dst
- *   The destination of the byte copy, must be at least \p num_bytes in size.
- *
- * @param src
- *   The source of the byte copy, must be at least \p num_bytes in size.
- *
- * @param num_bytes
- *   The number of bytes to copy from \p src to \p dst.
- */
-void bfMemCopy(void* const dst, const void* const src, std::size_t num_bytes);
+namespace Memory
+{
+  void CopyBytes(void* const dst, const void* const src, const MemoryIndex num_bytes);
+  void SetBytes(void* const dst, const unsigned char value, std::size_t num_bytes);
 
+  template<typename T>
+  void ZeroObject(T* const object)
+  {
+    SetBytes(object, 0x0, sizeof(*object));
+  }
+}  // namespace Memory
+
+void bfMemCopy(void* const dst, const void* const src, std::size_t num_bytes);
 void bfMemSet(void* const dst, const unsigned char value, std::size_t num_bytes);
 
 template<typename SrcIterator, typename DstIterator>
