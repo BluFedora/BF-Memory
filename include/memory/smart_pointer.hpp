@@ -77,9 +77,9 @@ namespace Memory
 
     constexpr MemoryIndex length() const noexcept { return m_Header->num_objects; }
 
-    void operator()(void* const ptr) const noexcept
+    void operator()(const void* const ptr) const noexcept
     {
-      m_Header->deleter(m_Header, ptr);
+      m_Header->deleter(m_Header, const_cast<void*>(ptr));
     }
   };
 
