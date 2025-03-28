@@ -17,7 +17,7 @@
 #define BF_MEMORY_ALLOCATION_INFO 1
 #endif
 
-using MemoryIndex = decltype(sizeof(int));  //!<
+using MemoryIndex = decltype(sizeof(int));  //!< Type representing a byte offset into memory.
 
 using byte = unsigned char;  //!< Type to represent a single byte of memory.
 
