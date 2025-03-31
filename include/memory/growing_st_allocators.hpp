@@ -45,6 +45,8 @@ namespace Memory
      const MemoryIndex      block_alignment,
      const MemoryIndex      num_blocks_per_chunk) noexcept;
 
+    IPolymorphicAllocator& ParentAllocator() const { return m_ParentAllocator; }
+
     void             Clear() noexcept;
     AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) noexcept;
     void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
