@@ -43,7 +43,8 @@ namespace Memory
   template<typename T>
   void ZeroObject(T* const object)
   {
-    SetBytes(object, 0x0, sizeof(*object));
+    static_assert(!std::is_pointer_v<T>, "Pointer values should be assigned to nullptr explicitly.");
+    SetBytes(object, 0x0, sizeof(T));
   }
 }  // namespace Memory
 
