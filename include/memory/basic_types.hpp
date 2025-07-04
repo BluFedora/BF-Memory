@@ -404,12 +404,10 @@ template<typename BaseAllocator,
          BoundCheckingPolicy  BoundCheck   = Memory::DefaultBoundsCheckingPolicy,
          typename AllocationTrackingPolicy = Memory::NoMemoryTracking,
          typename LockPolicy               = Memory::NoLock>
-// clang-format off
 struct Allocator : public IPolymorphicAllocator,
                    public BaseAllocator,
                    public AllocationTrackingPolicy,
                    public LockPolicy
-// clang-format on
 {
   static constexpr bool MemoryMarkingEnabled = MarkPolicy != AllocationMarkPolicy::UNMARKED;
   static constexpr bool BoundCheckingEnabled = BoundCheck != BoundCheckingPolicy::UNCHECKED;
