@@ -5,7 +5,7 @@
  * @brief
  *   Defines the basic types shared though out the library.
  *
- * @copyright Copyright (c) 2023-2024 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2023-2025 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP
@@ -18,12 +18,13 @@
 #endif
 
 using MemoryIndex = decltype(sizeof(int));  //!< Type representing a byte offset into memory.
+using byte        = unsigned char;          //!< Type to represent a single byte of memory.
 
-using byte = unsigned char;  //!< Type to represent a single byte of memory.
-
-#define bfKilobytes(n) static_cast<MemoryIndex>((n) * 1024)
-#define bfMegabytes(n) static_cast<MemoryIndex>(bfKilobytes(n) * 1024)
-#define bfGigabytes(n) static_cast<MemoryIndex>(bfMegabytes(n) * 1024)
+// clang-format off
+template<typename T = MemoryIndex> constexpr T MemKilobytes(const T n) { return static_cast<T>(n * 1024); }
+template<typename T = MemoryIndex> constexpr T MemMegabytes(const T n) { return MemKilobytes<T>(n) * 1024; }
+template<typename T = MemoryIndex> constexpr T MemGigabytes(const T n) { return MemMegabytes<T>(n) * 1024; }
+// clang-format on
 
 constexpr bool WillMulOverflow(const MemoryIndex lhs, const MemoryIndex rhs)
 {
@@ -196,11 +197,16 @@ enum class AllocationOp : MemoryIndex
  * @brief
  *   ptr is a AllocationSourceInfo* ptr when op == DO_ALLOCATE.
  */
-using PolymorphicAllocatorFn = AllocationResult (*)(MemoryIndex size, MemoryIndex alignment, void* const ptr, const AllocationOp op, void* const self);
+using PolymorphicAllocatorFn = AllocationResult (*)(
+ const MemoryIndex  size,
+ const MemoryIndex  alignment,
+ void* const        ptr,
+ const AllocationOp op,
+ void* const        self);
 
 /*!
  * @brief
- *   Type erased polymorphic allocator, unlike AllocatorView this in meant for long term storage.
+ *   Type erased polymorphic allocator, unlike \ref AllocatorView this in meant for long term storage.
  */
 struct IPolymorphicAllocator
 {
@@ -229,7 +235,7 @@ struct IPolymorphicAllocator
 
 /*!
  * @brief
- *   Type erased polymorphic view for an allocator to be used as a parameter type.
+ *   Type erased polymorphic view for an allocator meant to be used as a parameter type.
  */
 struct AllocatorView
 {
@@ -251,7 +257,7 @@ struct AllocatorView
   template<typename AllocatorConcept>
   explicit AllocatorView(AllocatorConcept& allocator) :
     self{&allocator},
-    allocate_fn{&AllocateImpl<AllocatorConcept>}
+    allocate_fn{&TypeErasedAllocate<AllocatorConcept>}
   {
   }
 
@@ -266,7 +272,7 @@ struct AllocatorView
   }
 
   template<typename AllocatorConcept>
-  static AllocationResult AllocateImpl(MemoryIndex size, MemoryIndex alignment, void* const ptr, const AllocationOp op, void* const self)
+  static AllocationResult TypeErasedAllocate(MemoryIndex size, MemoryIndex alignment, void* const ptr, const AllocationOp op, void* const self)
   {
     AllocatorConcept& typed_self = *static_cast<AllocatorConcept*>(self);
 
@@ -414,27 +420,10 @@ struct Allocator : public IPolymorphicAllocator,
 
   template<typename... Args>
   Allocator(Args&&... args) :
-    IPolymorphicAllocator(+[](MemoryIndex size, MemoryIndex alignment, void* const ptr, const AllocationOp op, void* const self) -> AllocationResult {
-      // Polymorphic Interface
-
-      Allocator<BaseAllocator>& typed_self = *static_cast<Allocator<BaseAllocator>*>(static_cast<IPolymorphicAllocator*>(self));
-
-      if (op == AllocationOp::DO_ALLOCATE)
-      {
-        return typed_self.Allocate(size, alignment, *static_cast<const AllocationSourceInfo*>(ptr));
-      }
-      else
-      {
-        typed_self.Deallocate(ptr, size, alignment);
-      }
-
-      return AllocationResult::Null();
-    }),
+    IPolymorphicAllocator(&AllocatorView::TypeErasedAllocate<Allocator<BaseAllocator>>),
     BaseAllocator{static_cast<decltype(args)&&>(args)...}
   {
   }
-
-  // Static Interface
 
   AllocationResult Allocate(const MemoryIndex size, MemoryIndex alignment, const AllocationSourceInfo& source_info) noexcept
   {
@@ -531,7 +520,7 @@ struct Allocator : public IPolymorphicAllocator,
 /*
   MIT License
 
-  Copyright (c) 2023-2024 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2025 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

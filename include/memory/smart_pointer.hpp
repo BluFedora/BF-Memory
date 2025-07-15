@@ -11,6 +11,7 @@
 #ifndef LIB_FOUNDATION_MEMORY_SMART_POINTER_HPP
 #define LIB_FOUNDATION_MEMORY_SMART_POINTER_HPP
 
+#include "memory/alignment.hpp"      // AlignSize
 #include "memory/allocation.hpp"     // IPolymorphicAllocator, bfMemAllocateArray, bfMemDeallocateArray, bfMemAllocateObject, bfMemDeallocateObject
 #include "memory/stl_allocator.hpp"  // StlAllocator
 
@@ -183,7 +184,7 @@ SharedPtr<T[]> bfMemMakeSharedAliasArray(SharedPtr<U> owner, T* const ptr)
  *   The default std::unique_ptr does not support std::unique_ptr<T[N]> with a bounded array
  *   but this modified version does the correct thing when containing a bounded array.
  *
- *   The normal unique_ptr doesn't have an specialization for a bounded array and will try to use
+ *   The normal std::unique_ptr doesn't have an specialization for a bounded array and will try to use
  *   the singular object specialization which calls the incorrect delete.
  *
  *   Additional Features:
