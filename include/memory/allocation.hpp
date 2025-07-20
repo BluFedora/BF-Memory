@@ -5,7 +5,7 @@
  * @brief
  *   Main allocation interface.
  *
- * @copyright Copyright (c) 2023-2024 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2023-2025 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef LIB_FOUNDATION_MEMORY_ALLOCATION_HPP
@@ -18,10 +18,6 @@
 
 namespace Memory
 {
-  /*!
-   * @brief
-   *   Describes the way memory should be initialized.
-   */
   enum class ArrayConstruct
   {
     UNINITIALIZE,       //!< Memory is left alone in uninitialized state.
@@ -100,10 +96,10 @@ namespace Memory
  *    A pointer size pair of the usable block of memory, the size may be larger than \p size.
  *    AllocationResult::Null - on failed allocation.
  *
- * @see bfMemDeallocate
+ * @see MemDeallocate
  */
 template<typename AllocatorConcept>
-AllocationResult bfMemAllocate(AllocatorConcept&& allocator, const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info)
+AllocationResult MemAllocate(AllocatorConcept&& allocator, const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg())
 {
   if (size != 0)
   {
@@ -112,11 +108,10 @@ AllocationResult bfMemAllocate(AllocatorConcept&& allocator, const MemoryIndex s
 
   return AllocationResult::Null();
 }
-#define bfMemAllocate(allocator, size, alignment) (bfMemAllocate)((allocator), (size), (alignment), MemoryMakeAllocationSourceInfo())
 
 /*!
  * @brief
- *   Returns memory allocated from bfMemAllocate back to \p allocator.
+ *   Returns memory allocated from MemAllocate back to \p allocator.
  *
  * @tparam AllocatorConcept
  *   Type of the allocator that follows the Allocator interface.
@@ -128,22 +123,35 @@ AllocationResult bfMemAllocate(AllocatorConcept&& allocator, const MemoryIndex s
  *   The block of memory to free.
  *
  * @param size
- *   The size passed into bfMemAllocate.
+ *   The size passed into MemAllocate.
  *
  * @param alignment
- *   The alignment passed into bfMemAllocate.
+ *   The alignment passed into MemAllocate.
  *
- * @see bfMemAllocate
+ * @see MemAllocate
  */
 template<typename AllocatorConcept>
-void bfMemDeallocate(AllocatorConcept&& allocator, void* const ptr, const MemoryIndex size, const MemoryIndex alignment)
+void MemDeallocate(AllocatorConcept&& allocator, void* const ptr, const MemoryIndex size, const MemoryIndex alignment)
 {
-  return allocator.Deallocate(ptr, size, alignment);
+  allocator.Deallocate(ptr, size, alignment);
 }
 
 //-------------------------------------------------------------------------------------//
 // Single Object API: Calls constructor and destructors on the allocated memory.
 //-------------------------------------------------------------------------------------//
+
+struct AllocatorWithSourceInfo
+{
+  AllocatorView        allocator;
+  AllocationSourceInfo source_info;
+
+  template<typename Allocator>
+  AllocatorWithSourceInfo(Allocator& allocator, const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg()) :
+    allocator{allocator},
+    source_info{source_info}
+  {
+  }
+};
 
 /*!
  * @brief
@@ -165,12 +173,10 @@ void bfMemDeallocate(AllocatorConcept&& allocator, void* const ptr, const Memory
  *   On Success: Returns a new object T.
  *   On Failure: nullptr.
  */
-template<typename T, typename AllocatorConcept, typename... Args>
-T* bfMemAllocateObject(AllocatorConcept&& allocator, Args&&... args)
+template<typename T, typename... Args>
+T* MemAllocateT(const AllocatorWithSourceInfo a, Args&&... args)
 {
-  const AllocationResult mem_block = bfMemAllocate(allocator, sizeof(T), alignof(T));
-
-  return Memory::Construct<T>(mem_block.ptr, std::forward<Args>(args)...);
+  return Memory::Construct<T>(MemAllocate(a.allocator, sizeof(T), alignof(T), a.source_info), std::forward<Args>(args)...);
 }
 
 /*!
@@ -186,41 +192,18 @@ T* bfMemAllocateObject(AllocatorConcept&& allocator, Args&&... args)
  * @param ptr
  */
 template<typename T, typename AllocatorConcept>
-void bfMemDeallocateObject(AllocatorConcept&& allocator, T* const ptr)
+void MemDeallocateT(AllocatorConcept&& allocator, T* const ptr)
 {
-  if (ptr)
+  if (ptr != nullptr)
   {
-    ptr->~T();
-    bfMemDeallocate(allocator, ptr, sizeof(T), alignof(T));
+    Memory::Destruct(ptr);
+    MemDeallocate(allocator, ptr, sizeof(T), alignof(T));
   }
 }
 
 //-------------------------------------------------------------------------------------//
 // Array API:
 //-------------------------------------------------------------------------------------//
-
-/*!
- * @brief
- *   Initializes a block of memory using the policy from \p init.
- *   The block of memory should be uninitialized.
- *
- * @tparam T
- *   The type of array.
- *
- * @tparam init
- *   The policy to used to initialize the bytes.
- *
- * @param mem_block
- *   The memory block ot initialize treated as an array of \p T.
- *
- * @param num_elements
- *   The number of elements in the array.
- *
- * @return
- *   The type casted block of memory into it's correct array type.
- */
-template<typename T, Memory::ArrayConstruct init>
-T* bfMemArrayConstruct(const AllocationResult mem_block, const MemoryIndex num_elements);
 
 /*!
  * @brief
@@ -251,16 +234,30 @@ T* bfMemArrayConstruct(const AllocationResult mem_block, const MemoryIndex num_e
  * @see Memory::ArrayConstruct
  */
 template<typename T, Memory::ArrayConstruct init = Memory::ArrayConstruct::UNINITIALIZE, typename AllocatorConcept>
-T* bfMemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T), const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg())
+T* MemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T), const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg())
 {
-  const AllocationResult mem_block = (bfMemAllocate)(allocator, sizeof(T) * num_elements, alignment, source_info);
+  const AllocationResult mem_block = MemAllocate(allocator, sizeof(T) * num_elements, alignment, source_info);
 
-  return bfMemArrayConstruct<T, init>(mem_block, num_elements);
+  T* const typed_array = static_cast<T*>(mem_block.ptr);
+
+  if (typed_array)
+  {
+    if constexpr (init == Memory::ArrayConstruct::DEFAULT_CONSTRUCT)
+    {
+      Memory::DefaultConstructRange(typed_array, typed_array + num_elements);
+    }
+    else if constexpr (init == Memory::ArrayConstruct::VALUE_CONSTRUCT)
+    {
+      Memory::ValueConstructRange(typed_array, typed_array + num_elements);
+    }
+  }
+
+  return typed_array;
 }
 
 /*!
  * @brief
- *   Free memory allocated from bfMemAllocateArray.
+ *   Free memory allocated from MemAllocateArray.
  *
  * @tparam T
  *   The type of array.
@@ -280,39 +277,15 @@ T* bfMemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elemen
  * @param alignment
  *   Alignment of the first element in the array.
  *
- * @see bfMemAllocateArray
+ * @see MemAllocateArray
  */
 template<typename T, typename AllocatorConcept>
-void bfMemDeallocateArray(AllocatorConcept&& allocator, T* const array, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T))
+void MemDeallocateArray(AllocatorConcept&& allocator, T* const array, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T))
 {
   if (array && num_elements)
   {
-    bfMemDeallocate(allocator, array, sizeof(T) * num_elements, alignment);
+    MemDeallocate(allocator, array, sizeof(T) * num_elements, alignment);
   }
-}
-
-//-------------------------------------------------------------------------------------//
-// Templated Function Implementations
-//-------------------------------------------------------------------------------------//
-
-template<typename T, Memory::ArrayConstruct init>
-T* bfMemArrayConstruct(const AllocationResult mem_block, const MemoryIndex num_elements)
-{
-  T* const typed_array = static_cast<T*>(mem_block.ptr);
-
-  if (typed_array)
-  {
-    if constexpr (init == Memory::ArrayConstruct::DEFAULT_CONSTRUCT)
-    {
-      Memory::DefaultConstructRange(typed_array, typed_array + num_elements);
-    }
-    else if constexpr (init == Memory::ArrayConstruct::VALUE_CONSTRUCT)
-    {
-      Memory::ValueConstructRange(typed_array, typed_array + num_elements);
-    }
-  }
-
-  return typed_array;
 }
 
 #endif  // LIB_FOUNDATION_MEMORY_ALLOCATION_HPP
@@ -321,7 +294,7 @@ T* bfMemArrayConstruct(const AllocationResult mem_block, const MemoryIndex num_e
 /*
   MIT License
 
-  Copyright (c) 2023-2024 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2025 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

@@ -11,22 +11,23 @@
 #ifndef LIB_FOUNDATION_MEMORY_ALIGHNMENT_HPP
 #define LIB_FOUNDATION_MEMORY_ALIGHNMENT_HPP
 
-#include "assertion.hpp"    // bfMemAssert
+#include "assertion.hpp"    // MemAssert
 #include "basic_types.hpp"  // MemoryIndex
 
 #include <cstddef>  // max_align_t
 
 namespace Memory
 {
+  inline constexpr MemoryIndex DefaultMallocAlignment = alignof(std::max_align_t); //!< The (minimum) alignment a pointer from malloc will have.
+
 #if defined(__STDCPP_DEFAULT_NEW_ALIGNMENT__)
-  static constexpr MemoryIndex DefaultNewAlignment = __STDCPP_DEFAULT_NEW_ALIGNMENT__; //!< The alignment a pointer from new will have.
+  inline constexpr MemoryIndex DefaultNewAlignment = __STDCPP_DEFAULT_NEW_ALIGNMENT__; //!< The alignment a pointer from new will have.
 #else
-  static constexpr MemoryIndex DefaultNewAlignment = alignof(std::max_align_t); //!< The alignment a pointer from new will have.
+  inline constexpr MemoryIndex DefaultNewAlignment = DefaultMallocAlignment; //!< The alignment a pointer from new will have.
 #endif
 
-  static constexpr MemoryIndex DefaultMallocAlignment = alignof(std::max_align_t); //!< The (minimum) alignment a pointer from malloc will have.
 
-  static constexpr MemoryIndex DefaultAlignment = DefaultMallocAlignment < DefaultNewAlignment ? DefaultNewAlignment : DefaultMallocAlignment; //!< An address aligned to this value can support any non-overaligned datatype.
+  inline constexpr MemoryIndex DefaultAlignment = DefaultMallocAlignment < DefaultNewAlignment ? DefaultNewAlignment : DefaultMallocAlignment; //!< An address aligned to this value can support any non-overaligned datatype.
 
   /*!
    * @brief
@@ -58,7 +59,7 @@ namespace Memory
   */
   constexpr MemoryIndex IsSizeAligned(const MemoryIndex size, const MemoryIndex alignment) noexcept
   {
-    bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
+    MemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
 
     return (size & (alignment - 1u)) == 0;
   }
@@ -78,7 +79,7 @@ namespace Memory
    */
   constexpr MemoryIndex AlignSize(const MemoryIndex size, const MemoryIndex alignment) noexcept
   {
-    bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
+    MemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
 
     const MemoryIndex required_alignment_mask = alignment - 1;
 

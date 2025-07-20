@@ -5,7 +5,7 @@
  * @brief
  *   Optional extra checking of function preconditions.
  *
- * @copyright Copyright (c) 2023 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2023-2025 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #include "memory/assertion.hpp"
@@ -16,7 +16,7 @@
 #include <cstdio>   // vsnprintf, stderr
 #include <cstdlib>  // abort
 
-void bfMemAssertImpl(const char* const expr_str, const char* const filename, const int line_number, const char* const assert_msg, ...)
+void MemAssertImpl(const char* const expr_str, const char* const filename, const int line_number, const char* const assert_msg, ...)
 {
   char assert_message_buffer[256];
 
@@ -35,7 +35,7 @@ void bfMemAssertImpl(const char* const expr_str, const char* const filename, con
 /*
   MIT License
 
-  Copyright (c) 2023 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2025 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

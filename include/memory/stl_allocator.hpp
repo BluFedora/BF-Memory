@@ -16,7 +16,7 @@
 #ifndef LIB_FOUNDATION_MEMORY_STL_ALLOCATOR_HPP
 #define LIB_FOUNDATION_MEMORY_STL_ALLOCATOR_HPP
 
-#include "allocation.hpp"           // IPolymorphicAllocator, bfMemAllocateArray, bfMemDeallocateArray
+#include "allocation.hpp"           // IPolymorphicAllocator, MemAllocateArray, MemDeallocateArray
 #include "memory/default_heap.hpp"  // DefaultHeap
 
 #include <utility>  // forward
@@ -144,8 +144,8 @@ namespace Memory
 
     [[nodiscard]] pointer           address(reference x) const noexcept { return &x; }
     [[nodiscard]] const_pointer     address(const_reference x) const noexcept { return &x; }
-    [[nodiscard]] constexpr pointer allocate(size_type s) { return s ? bfMemAllocateArray<T>(m_MemoryBackend, s) : nullptr; }
-    constexpr void                  deallocate(pointer p, size_type s) { bfMemDeallocateArray(m_MemoryBackend, p, s); }
+    [[nodiscard]] constexpr pointer allocate(size_type s) { return s ? MemAllocateArray<T>(m_MemoryBackend, s) : nullptr; }
+    constexpr void                  deallocate(pointer p, size_type s) { MemDeallocateArray(m_MemoryBackend, p, s); }
 
     template<class U, class... Args>
     void construct(U *const p, Args &&...args)

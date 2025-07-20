@@ -64,7 +64,7 @@ void Memory::LinearAllocatorSavePoint::Save(LinearAllocator& allocator) noexcept
 
 void Memory::LinearAllocatorSavePoint::Restore() noexcept
 {
-  bfMemAssert(m_Allocator != nullptr, "Savepoint must be active before restore can be called.");
+  MemAssert(m_Allocator != nullptr, "Savepoint must be active before restore can be called.");
 
   m_Allocator->m_Current = m_RestorePoint;
   m_Allocator            = nullptr;
@@ -128,9 +128,9 @@ void Memory::StackAllocator::Deallocate(void* const ptr, const MemoryIndex size,
 
   const StackAllocatorHeader header = Stack::ReadHeader(reinterpret_cast<byte*>(ptr) - sizeof(StackAllocatorHeader));
 
-  bfMemAssert(header.num_bytes == size, "Incorrect number of bytes passed in.");
-  bfMemAssert(header.restore < m_MemoryEnd, "Invalid pointer passed in (Restore point invalid).");
-  bfMemAssert(header.restore < m_StackPtr, "Invalid pointer passed in (Stack pointer should be ahead of restore point).");
+  MemAssert(header.num_bytes == size, "Incorrect number of bytes passed in.");
+  MemAssert(header.restore < m_MemoryEnd, "Invalid pointer passed in (Restore point invalid).");
+  MemAssert(header.restore < m_StackPtr, "Invalid pointer passed in (Stack pointer should be ahead of restore point).");
 
   m_StackPtr = header.restore;
 }
@@ -160,21 +160,21 @@ void Memory::PoolAllocator::Reset() noexcept
 
 MemoryIndex Memory::PoolAllocator::IndexOf(const void* ptr) const noexcept
 {
-  bfMemAssert(ptr < reinterpret_cast<const byte*>(m_MemoryBgn) + m_BlockSize * m_NumElements, "Pointer does not belong to this pool.");
+  MemAssert(ptr < reinterpret_cast<const byte*>(m_MemoryBgn) + m_BlockSize * m_NumElements, "Pointer does not belong to this pool.");
   return (reinterpret_cast<const byte*>(ptr) - m_MemoryBgn) / m_BlockSize;
 }
 
 void* Memory::PoolAllocator::FromIndex(const MemoryIndex index) noexcept
 {
-  bfMemAssert(index < m_NumElements, "Invalid index");
+  MemAssert(index < m_NumElements, "Invalid index");
 
   return m_MemoryBgn + m_BlockSize * index;
 }
 
 AllocationResult Memory::PoolAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo&) noexcept
 {
-  bfMemAssert(size <= m_BlockSize, "This Allocator is made for Objects of a certain size!");
-  bfMemAssert(alignment <= m_Alignment, "This Allocator is made for Objects of a certain alignment!");
+  MemAssert(size <= m_BlockSize, "This Allocator is made for Objects of a certain size!");
+  MemAssert(alignment <= m_Alignment, "This Allocator is made for Objects of a certain alignment!");
 
   PoolAllocatorBlock* const block = m_PoolHead;
 
@@ -190,10 +190,10 @@ AllocationResult Memory::PoolAllocator::Allocate(const MemoryIndex size, const M
 
 void Memory::PoolAllocator::Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
 {
-  bfMemAssert(size <= m_BlockSize, "That allocation did not come from this allocator (bad size).");
-  bfMemAssert(alignment <= m_Alignment, "That allocation did not come from this allocator (bad alignment).");
-  bfMemAssert(m_MemoryBgn <= ptr && ptr < m_MemoryEnd, "That allocation did not come from this allocator.");
-  bfMemAssert(IsPointerAligned(ptr, alignment), "All memory from this allocator is aligned.");
+  MemAssert(size <= m_BlockSize, "That allocation did not come from this allocator (bad size).");
+  MemAssert(alignment <= m_Alignment, "That allocation did not come from this allocator (bad alignment).");
+  MemAssert(m_MemoryBgn <= ptr && ptr < m_MemoryEnd, "That allocation did not come from this allocator.");
+  MemAssert(IsPointerAligned(ptr, alignment), "All memory from this allocator is aligned.");
 
   PoolAllocatorBlock* const block = static_cast<PoolAllocatorBlock*>(ptr);
 
@@ -203,7 +203,7 @@ void Memory::PoolAllocator::Deallocate(void* const ptr, const MemoryIndex size, 
 
 Memory::PoolAllocatorSetupResult Memory::PoolAllocator::SetupPool(byte* const memory_block, const MemoryIndex memory_size, const MemoryIndex block_size, const MemoryIndex alignment) noexcept
 {
-  bfMemAssert(block_size >= sizeof(PoolAllocatorBlock), "Each block must be at least PoolAllocatorBlock in size.");
+  MemAssert(block_size >= sizeof(PoolAllocatorBlock), "Each block must be at least PoolAllocatorBlock in size.");
 
   const MemoryIndex aligned_block_size = AlignSize(block_size, alignment);
   byte* const       base_address       = static_cast<byte*>(AlignPointer(memory_block, alignment));
@@ -257,7 +257,7 @@ namespace FreeList
 
 AllocationResult Memory::FreeListAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo&) noexcept
 {
-  bfMemAssert(alignment <= FreeList::MaxAlignment, "Alignment too large.");
+  MemAssert(alignment <= FreeList::MaxAlignment, "Alignment too large.");
 
   const MemoryIndex      allocation_size = FreeList::AlignedAllocationSize(size, alignment);
   const AllocationResult allocation      = AllocateInternal(allocation_size);
@@ -352,7 +352,7 @@ void Memory::FreeListAllocator::DeallocateInternal(void* const ptr, const Memory
   AllocationHeader* const header = reinterpret_cast<AllocationHeader*>(reinterpret_cast<char*>(ptr) - sizeof(AllocationHeader));
   FreeListNode* const     node   = static_cast<FreeListNode*>(header);
 
-  bfMemAssert(size <= header->size, "Invalid number of bytes passed in.,");
+  MemAssert(size <= header->size, "Invalid number of bytes passed in.,");
 
   FreeListNode*     previous   = nullptr;
   FreeListNode*     current    = m_Freelist;

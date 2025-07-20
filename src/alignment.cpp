@@ -5,7 +5,7 @@
  * @brief
  *   Utilities for handling alignment of memory allocations.
  *
- * @copyright Copyright (c) 2023-2024 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2023-2025 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #include "memory/alignment.hpp"
@@ -14,14 +14,14 @@
 
 bool Memory::IsPointerAligned(const void* const ptr, const MemoryIndex alignment) noexcept
 {
-  bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
+  MemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
 
   return (reinterpret_cast<std::uintptr_t>(ptr) & (alignment - 1u)) == 0u;
 }
 
 void* Memory::AlignPointer(const void* const ptr, const MemoryIndex alignment) noexcept
 {
-  bfMemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
+  MemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
 
   const MemoryIndex required_alignment_mask = alignment - 1;
 
@@ -41,22 +41,22 @@ MemoryIndex Memory::PointerAlignOffset(const void* const ptr, const MemoryIndex 
 */
 void* Memory::StandardAlign(const MemoryIndex alignment, const MemoryIndex size, void** ptr, MemoryIndex* space) noexcept
 {
-  bfMemAssert(alignment > 0 && (alignment & (alignment - 1)) == 0, "The alignment must be a non-zero power of two.");
-  bfMemAssert(ptr != NULL, "Passed in pointer must not be null.");
-  bfMemAssert(space != NULL, "Passed in space must not be null.");
+  MemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
+  MemAssert(ptr != nullptr, "Passed in pointer must not be null.");
+  MemAssert(space != nullptr, "Passed in space must not be null.");
 
   void* const          aligned_ptr = Memory::AlignPointer(*ptr, alignment);
   const std::ptrdiff_t offset      = (char*)aligned_ptr - (char*)*ptr;
 
   if (*space >= (size + offset))
   {
-    *ptr = aligned_ptr;
+    *ptr    = aligned_ptr;
     *space -= offset;
 
     return aligned_ptr;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 void MemoryRequirements::AlignSizeToAlignment() noexcept
@@ -76,35 +76,31 @@ bool MemoryRequirements::IsBufferValid(const void* const buffer) const noexcept
 
 void* MemoryRequirements::Alloc(void** buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
 {
-  if (WillMulOverflow(element_size, element_count))
+  if (!WillMulOverflow(element_size, element_count))
   {
-    return nullptr;
+    if (const MemoryIndex allocation_size = element_size * element_count; allocation_size != 0)
+    {
+      byte* const result = static_cast<byte*>(Memory::AlignPointer(*buffer, element_alignment));
+
+      *buffer = result + allocation_size;
+
+      if (buffer_end)
+      {
+        MemAssert(*buffer <= buffer_end, "Not enough space in buffer, incorrect buffer size for the MemoryRequirements passed in.");
+      }
+
+      return result;
+    }
   }
 
-  const MemoryIndex allocation_size = element_size * element_count;
-
-  if (!allocation_size)
-  {
-    return nullptr;
-  }
-
-  byte* const result = static_cast<byte*>(Memory::AlignPointer(*buffer, element_alignment));
-
-  *buffer = result + allocation_size;
-
-  if (buffer_end)
-  {
-    bfMemAssert(*buffer <= buffer_end, "Not enough space in buffer, incorrect buffer size for the MemoryRequirements passed in.");
-  }
-
-  return result;
+  return nullptr;
 }
 
 /******************************************************************************/
 /*
   MIT License
 
-  Copyright (c) 2023-2024 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2025 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal

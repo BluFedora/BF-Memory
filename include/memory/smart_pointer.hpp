@@ -12,7 +12,7 @@
 #define LIB_FOUNDATION_MEMORY_SMART_POINTER_HPP
 
 #include "memory/alignment.hpp"      // AlignSize
-#include "memory/allocation.hpp"     // IPolymorphicAllocator, bfMemAllocateArray, bfMemDeallocateArray, bfMemAllocateObject, bfMemDeallocateObject
+#include "memory/allocation.hpp"     // IPolymorphicAllocator, MemAllocateArray, MemDeallocateArray, MemAllocateT, MemDeallocateT
 #include "memory/stl_allocator.hpp"  // StlAllocator
 
 #include <memory>       // shared_ptr, allocate_shared, unique_ptr
@@ -138,11 +138,11 @@ SharedPtr<T> bfMemMakeShared(AllocatorConcept* const allocator, const MemoryInde
 #else
   using element_type = std::remove_extent_t<T>;
 
-  element_type* const memory = bfMemAllocateArray<element_type, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements, alignof(T));
+  element_type* const memory = MemAllocateArray<element_type, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements, alignof(T));
 
   auto deleter = [allocator, num_elements](element_type* const ptr) {
     Memory::DestructRange(ptr, ptr + num_elements);
-    bfMemDeallocateArray(*allocator, ptr, num_elements, alignof(T));
+    MemDeallocateArray(*allocator, ptr, num_elements, alignof(T));
   };
 
   return memory ? SharedPtr<T>(memory, std::move(deleter), Memory::StlAllocator<element_type, AllocatorConcept>(*allocator)) : nullptr;
@@ -154,11 +154,11 @@ SharedPtr<T> bfMemMakeShared(AllocatorConcept* const allocator, const MemoryInde
 {
   using element_type = std::remove_extent_t<T>;
 
-  element_type* const memory = bfMemAllocateArray<element_type, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements, element_alignment);
+  element_type* const memory = MemAllocateArray<element_type, Memory::ArrayConstruct::DEFAULT_CONSTRUCT>(*allocator, num_elements, element_alignment);
 
   auto deleter = [allocator, num_elements, element_alignment](element_type* const ptr) {
     Memory::DestructRange(ptr, ptr + num_elements);
-    bfMemDeallocateArray(*allocator, ptr, num_elements, element_alignment);
+    MemDeallocateArray(*allocator, ptr, num_elements, element_alignment);
   };
 
   return memory ? SharedPtr<T>(memory, std::move(deleter), Memory::StlAllocator<element_type, AllocatorConcept>(*allocator)) : nullptr;
@@ -228,7 +228,7 @@ namespace Memory
     const MemoryIndex objects_size = num_objects * sizeof(object_type);
     const MemoryIndex total_size   = header_size + objects_size;
 
-    if (void* const allocation = bfMemAllocate(*allocator, total_size, alignment).ptr; allocation != nullptr)
+    if (void* const allocation = MemAllocate(*allocator, total_size, alignment).ptr; allocation != nullptr)
     {
       UniquePtrHeader* const header = static_cast<UniquePtrHeader*>(allocation);
 
@@ -240,7 +240,7 @@ namespace Memory
         const MemoryIndex total_size   = header_size + objects_size;
 
         Memory::DestructRange(static_cast<pointer>(ptr), static_cast<pointer>(ptr) + num_objects);
-        bfMemDeallocate(*static_cast<AllocatorConcept*>(header->allocator), header, total_size, alignment);
+        MemDeallocate(*static_cast<AllocatorConcept*>(header->allocator), header, total_size, alignment);
       };
 
       return UniquePtr<T>(reinterpret_cast<pointer>(static_cast<byte*>(allocation) + header_size), UniquePtrDeleter<T>(header));

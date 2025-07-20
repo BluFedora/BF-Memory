@@ -11,7 +11,7 @@
 #ifndef LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP
 #define LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP
 
-#include "assertion.hpp"  // bfMemAssert
+#include "assertion.hpp"  // MemAssert
 
 #ifndef BF_MEMORY_ALLOCATION_INFO
 #define BF_MEMORY_ALLOCATION_INFO 1
@@ -21,9 +21,9 @@ using MemoryIndex = decltype(sizeof(int));  //!< Type representing a byte offset
 using byte        = unsigned char;          //!< Type to represent a single byte of memory.
 
 // clang-format off
-template<typename T = MemoryIndex> constexpr T MemKilobytes(const T n) { return static_cast<T>(n * 1024); }
-template<typename T = MemoryIndex> constexpr T MemMegabytes(const T n) { return MemKilobytes<T>(n) * 1024; }
-template<typename T = MemoryIndex> constexpr T MemGigabytes(const T n) { return MemMegabytes<T>(n) * 1024; }
+template<typename T = MemoryIndex, typename U> constexpr T MemKilobytes(const U n) { return static_cast<T>(n * 1024); }
+template<typename T = MemoryIndex, typename U> constexpr T MemMegabytes(const U n) { return MemKilobytes<T>(n) * 1024; }
+template<typename T = MemoryIndex, typename U> constexpr T MemGigabytes(const U n) { return MemMegabytes<T>(n) * 1024; }
 // clang-format on
 
 constexpr bool WillMulOverflow(const MemoryIndex lhs, const MemoryIndex rhs)
@@ -176,13 +176,10 @@ struct AllocationSourceInfo
 };
 
 #if BF_MEMORY_ALLOCATION_INFO
-#define MemoryMakeAllocationSourceInfo() \
-  AllocationSourceInfo { __FILE__, __func__, __LINE__ }
+// #define MemoryMakeAllocationSourceInfo() AllocationSourceInfo { __FILE__, __func__, __LINE__ }
 #define MemoryMakeAllocationSourceInfoDefaultArg() \
   AllocationSourceInfo { __builtin_FILE(), __builtin_FUNCTION(), __builtin_LINE() }
 #else
-#define MemoryMakeAllocationSourceInfo() \
-  AllocationSourceInfo {}
 #define MemoryMakeAllocationSourceInfoDefaultArg() \
   AllocationSourceInfo {}
 #endif
@@ -344,7 +341,7 @@ namespace Memory
     {
       for (MemoryIndex byte_index = 0u; byte_index < num_bytes; ++byte_index)
       {
-        bfMemAssert(bytes[byte_index] == GuardBytePattern, "Memory guard byte check failure.");
+        MemAssert(bytes[byte_index] == GuardBytePattern, "Memory guard byte check failure.");
       }
     }
   }
@@ -373,12 +370,6 @@ namespace Memory
     }
   }
 
-  struct NoLock
-  {
-    void Lock() const noexcept {}
-    void Unlock() const noexcept {}
-  };
-
   struct NoMemoryTracking
   {
     void TrackAllocate(const MemoryTrackAllocate& allocate_info) const noexcept { (void)allocate_info; }
@@ -396,9 +387,6 @@ namespace Memory
  *
  * @tparam AllocationTrackingPolicy
  *
- * @tparam LockPolicy
- *   Will call `LockPolicy::Lock` and `LockPolicy::Unlock` around any allocation or allocation tracking operation.
- *
  * @tparam MarkPolicy
  *   Whether or not to mark each allocation and deallocation with special byte patterns.
  *
@@ -408,19 +396,17 @@ namespace Memory
 template<typename BaseAllocator,
          AllocationMarkPolicy MarkPolicy   = Memory::DefaultMarkPolicy,
          BoundCheckingPolicy  BoundCheck   = Memory::DefaultBoundsCheckingPolicy,
-         typename AllocationTrackingPolicy = Memory::NoMemoryTracking,
-         typename LockPolicy               = Memory::NoLock>
+         typename AllocationTrackingPolicy = Memory::NoMemoryTracking>
 struct Allocator : public IPolymorphicAllocator,
                    public BaseAllocator,
-                   public AllocationTrackingPolicy,
-                   public LockPolicy
+                   public AllocationTrackingPolicy
 {
   static constexpr bool MemoryMarkingEnabled = MarkPolicy != AllocationMarkPolicy::UNMARKED;
   static constexpr bool BoundCheckingEnabled = BoundCheck != BoundCheckingPolicy::UNCHECKED;
 
   template<typename... Args>
   Allocator(Args&&... args) :
-    IPolymorphicAllocator(&AllocatorView::TypeErasedAllocate<Allocator<BaseAllocator>>),
+    IPolymorphicAllocator(&AllocatorView::TypeErasedAllocate<Allocator>),
     BaseAllocator{static_cast<decltype(args)&&>(args)...}
   {
   }
@@ -438,19 +424,12 @@ struct Allocator : public IPolymorphicAllocator,
     const MemoryIndex guard_size = BoundCheckingEnabled ? alignment : 0u;
     const MemoryIndex total_size = guard_size + guard_size + size + guard_size;
 
-    LockPolicy::Lock();
-
     const AllocationResult allocation = static_cast<BaseAllocator*>(this)->Allocate(total_size, alignment, source_info);
 
     if (allocation)
     {
       AllocationTrackingPolicy::TrackAllocate(MemoryTrackAllocate{allocation, total_size, alignment, source_info});
-    }
 
-    LockPolicy::Unlock();
-
-    if (allocation)
-    {
       const MemoryIndex extra_bytes       = allocation.num_bytes - total_size;
       byte* const       bytes             = static_cast<byte*>(allocation.ptr);
       const MemoryIndex user_memory_size  = size + extra_bytes;
@@ -476,7 +455,7 @@ struct Allocator : public IPolymorphicAllocator,
 
   void Deallocate(void* const ptr, const MemoryIndex size, MemoryIndex alignment) noexcept
   {
-    if (ptr)
+    if (ptr != nullptr)
     {
       if constexpr (BoundCheckingEnabled)
       {
@@ -504,15 +483,18 @@ struct Allocator : public IPolymorphicAllocator,
 
       Memory::MarkFreedBytes<MarkPolicy>(mark_bytes, size);
 
-      LockPolicy::Lock();
-      {
-        AllocationTrackingPolicy::TrackDeallocate(MemoryTrackDeallocate{bytes, total_size, alignment});
-        static_cast<BaseAllocator*>(this)->Deallocate(bytes, total_size, alignment);
-      }
-      LockPolicy::Unlock();
+      AllocationTrackingPolicy::TrackDeallocate(MemoryTrackDeallocate{bytes, total_size, alignment});
+
+      static_cast<BaseAllocator*>(this)->Deallocate(bytes, total_size, alignment);
     }
   }
 };
+
+namespace Memory
+{
+  void CopyBytes(void* const dst, const void* const src, const MemoryIndex num_bytes);
+  void SetBytes(void* const dst, const byte value, const MemoryIndex num_bytes);
+}
 
 #endif  // LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP
 

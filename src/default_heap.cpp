@@ -14,11 +14,15 @@
 
 #include <new>  // align_val_t, nothrow
 
+#include <cstdio>
+
 struct CxxFreeStoreAllocator
 {
   AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) const noexcept
   {
     (void)source_info;
+
+    std::printf("[Memory] Allocation from %s:%s(%u) (size = %zu).\n", source_info.file, source_info.function, source_info.line, size);
 
     void* const ptr = ::operator new(size, std::align_val_t{alignment}, std::nothrow);
 
@@ -32,9 +36,9 @@ struct CxxFreeStoreAllocator
 };
 
 #if BF_MEMORY_DEBUG_HEAP
-using HeapAllocator = Allocator<CxxFreeStoreAllocator, AllocationMarkPolicy::MARKED, BoundCheckingPolicy::CHECKED, Memory::NoMemoryTracking, Memory::NoLock>;
+using HeapAllocator = Allocator<CxxFreeStoreAllocator, AllocationMarkPolicy::MARKED, BoundCheckingPolicy::CHECKED, Memory::NoMemoryTracking>;
 #else
-using HeapAllocator = Allocator<CxxFreeStoreAllocator, AllocationMarkPolicy::UNMARKED, BoundCheckingPolicy::UNCHECKED, Memory::NoMemoryTracking, Memory::NoLock>;
+using HeapAllocator = Allocator<CxxFreeStoreAllocator, AllocationMarkPolicy::UNMARKED, BoundCheckingPolicy::UNCHECKED, Memory::NoMemoryTracking>;
 #endif
 
 static HeapAllocator s_DefaultHeap = {};

@@ -53,7 +53,7 @@ namespace Memory
 
   inline LinearAllocator LinearAllocatorFromMemoryRequirements(void* const buffer, const MemoryRequirements mem_reqs)
   {
-    bfMemAssert(mem_reqs.IsBufferValid(buffer), "Buffer improperly aligned.");
+    MemAssert(mem_reqs.IsBufferValid(buffer), "Buffer improperly aligned.");
     return Memory::LinearAllocator{reinterpret_cast<byte*>(buffer), mem_reqs.size};
   }
 

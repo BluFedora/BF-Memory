@@ -2,13 +2,13 @@
 
 #include "memory/fixed_st_allocators.hpp"  // PoolAllocator, PoolAllocatorBlock
 
-#include "memory/memory_api.hpp"  // bfMemAllocate, bfMemDeallocate
+#include "memory/memory_api.hpp"  // MemAllocate, MemDeallocate
 
 Memory::GrowingPoolAllocator::GrowingPoolAllocator(
- IPolymorphicAllocator&       parent_allocator,
- const MemoryIndex block_size,
- const MemoryIndex block_alignment,
- const MemoryIndex num_blocks_per_chunk) noexcept :
+ IPolymorphicAllocator& parent_allocator,
+ const MemoryIndex      block_size,
+ const MemoryIndex      block_alignment,
+ const MemoryIndex      num_blocks_per_chunk) noexcept :
   m_ParentAllocator{parent_allocator},
   m_BlockSize{block_size < sizeof(PoolAllocatorBlock) ? sizeof(PoolAllocatorBlock) : block_size},
   m_Alignment{block_alignment < alignof(ChunkFooter) ? alignof(ChunkFooter) : block_alignment},
@@ -16,8 +16,8 @@ Memory::GrowingPoolAllocator::GrowingPoolAllocator(
   m_Chunks{nullptr},
   m_PoolHead{nullptr}
 {
-  bfMemAssert(block_size > 0, "Block size must be greater than 0.");
-  bfMemAssert(num_blocks_per_chunk > 0, "Num blocks per chunk must be greater than 0.");
+  MemAssert(block_size > 0, "Block size must be greater than 0.");
+  MemAssert(num_blocks_per_chunk > 0, "Num blocks per chunk must be greater than 0.");
 }
 
 void Memory::GrowingPoolAllocator::Clear() noexcept
@@ -55,7 +55,7 @@ void Memory::GrowingPoolAllocator::FreeMemory() noexcept
 
     byte* const chunk_bytes = reinterpret_cast<byte*>(chunk) - m_ChunkMemSize;
 
-    bfMemDeallocate(m_ParentAllocator, chunk_bytes, m_ChunkMemSize + sizeof(ChunkFooter), m_Alignment);
+    MemDeallocate(m_ParentAllocator, chunk_bytes, m_ChunkMemSize + sizeof(ChunkFooter), m_Alignment);
 
     chunk = next_chunk;
   }
@@ -63,8 +63,8 @@ void Memory::GrowingPoolAllocator::FreeMemory() noexcept
 
 AllocationResult Memory::GrowingPoolAllocator::Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info) noexcept
 {
-  bfMemAssert(size <= m_BlockSize, "This Allocator is made for Objects of size %zu (not %zu)!", m_BlockSize, size);
-  bfMemAssert(alignment <= m_Alignment, "This Allocator is made for Objects of alignment %zu (not %zu)!", m_Alignment, alignment);
+  MemAssert(size <= m_BlockSize, "This Allocator is made for Objects of size %zu (not %zu)!", m_BlockSize, size);
+  MemAssert(alignment <= m_Alignment, "This Allocator is made for Objects of alignment %zu (not %zu)!", m_Alignment, alignment);
 
 pool_alloc:
   PoolAllocatorBlock* const block = m_PoolHead;
@@ -76,7 +76,7 @@ pool_alloc:
     return AllocationResult{reinterpret_cast<void*>(block), m_BlockSize};
   }
 
-  const AllocationResult new_chunk_memory = (bfMemAllocate)(m_ParentAllocator, m_ChunkMemSize + sizeof(ChunkFooter), m_Alignment, source_info);
+  const AllocationResult new_chunk_memory = MemAllocate(m_ParentAllocator, m_ChunkMemSize + sizeof(ChunkFooter), m_Alignment, source_info);
 
   if (new_chunk_memory)
   {
@@ -100,8 +100,8 @@ pool_alloc:
 
 void Memory::GrowingPoolAllocator::Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
 {
-  bfMemAssert(size <= m_BlockSize, "That allocation did not come from this allocator (bad size).");
-  bfMemAssert(alignment <= m_Alignment, "That allocation did not come from this allocator (bad alignment).");
+  MemAssert(size <= m_BlockSize, "That allocation did not come from this allocator (bad size).");
+  MemAssert(alignment <= m_Alignment, "That allocation did not come from this allocator (bad alignment).");
 
   PoolAllocatorBlock* const block = static_cast<PoolAllocatorBlock*>(ptr);
 
