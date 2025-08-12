@@ -76,7 +76,7 @@ namespace Memory
 
   class LinearAllocatorSavePoint
   {
-   private:
+   protected:
     LinearAllocator* m_Allocator;     //!< The allocator to restore to.
     byte*            m_RestorePoint;  //!< The point in memory to go back to.
 
@@ -85,7 +85,7 @@ namespace Memory
     void Restore() noexcept;
   };
 
-  struct LinearAllocatorScope : private LinearAllocatorSavePoint
+  struct LinearAllocatorScope : protected LinearAllocatorSavePoint
   {
     LinearAllocatorScope(LinearAllocator& allocator) noexcept :
       LinearAllocatorSavePoint{}
