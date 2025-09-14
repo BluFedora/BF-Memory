@@ -131,6 +131,7 @@ struct MemoryRequirements
   static void* Alloc(void** buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept;
 };
 
+// TODO(SR): Remove Me.
 template<typename TagType>
 struct TaggedMemoryRequirements : public MemoryRequirements
 {
@@ -239,12 +240,6 @@ struct AllocatorView
   void*                  self;
   PolymorphicAllocatorFn allocate_fn;
 
-  AllocatorView(IPolymorphicAllocator& allocator) :
-    self{&allocator},
-    allocate_fn{allocator.allocate_fn}
-  {
-  }
-
   AllocatorView(const AllocatorView& rhs)            = default;
   AllocatorView(AllocatorView&& rhs)                 = default;
   AllocatorView& operator=(const AllocatorView& rhs) = default;
@@ -252,9 +247,9 @@ struct AllocatorView
   ~AllocatorView()                                   = default;
 
   template<typename AllocatorConcept>
-  explicit AllocatorView(AllocatorConcept& allocator) :
+  AllocatorView(AllocatorConcept& allocator) :
     self{&allocator},
-    allocate_fn{&TypeErasedAllocate<AllocatorConcept>}
+    allocate_fn{TypeErasedAllocate<AllocatorConcept>(allocator)}
   {
   }
 
@@ -269,20 +264,29 @@ struct AllocatorView
   }
 
   template<typename AllocatorConcept>
-  static AllocationResult TypeErasedAllocate(MemoryIndex size, MemoryIndex alignment, void* const ptr, const AllocationOp op, void* const self)
+  static PolymorphicAllocatorFn TypeErasedAllocate(AllocatorConcept& allocator)
   {
-    AllocatorConcept& typed_self = *static_cast<AllocatorConcept*>(self);
+    (void)allocator;
+    return +[](MemoryIndex size, MemoryIndex alignment, void* const ptr, const AllocationOp op, void* const self) -> AllocationResult {
+      AllocatorConcept& typed_self = *static_cast<AllocatorConcept*>(self);
 
-    if (op == AllocationOp::DO_ALLOCATE)
-    {
-      return typed_self.Allocate(size, alignment, *static_cast<const AllocationSourceInfo*>(ptr));
-    }
-    else
-    {
-      typed_self.Deallocate(ptr, size, alignment);
-    }
+      if (op == AllocationOp::DO_ALLOCATE)
+      {
+        return typed_self.Allocate(size, alignment, *static_cast<const AllocationSourceInfo*>(ptr));
+      }
+      else
+      {
+        typed_self.Deallocate(ptr, size, alignment);
+      }
 
-    return AllocationResult::Null();
+      return AllocationResult::Null();
+    };
+  }
+
+  template<>
+  static PolymorphicAllocatorFn TypeErasedAllocate<IPolymorphicAllocator>(IPolymorphicAllocator& allocator)
+  {
+    return allocator.allocate_fn;
   }
 };
 
@@ -406,7 +410,7 @@ struct Allocator : public IPolymorphicAllocator,
 
   template<typename... Args>
   Allocator(Args&&... args) :
-    IPolymorphicAllocator(&AllocatorView::TypeErasedAllocate<Allocator>),
+    IPolymorphicAllocator(AllocatorView::TypeErasedAllocate<Allocator>(*this)),
     BaseAllocator{static_cast<decltype(args)&&>(args)...}
   {
   }
@@ -494,6 +498,48 @@ namespace Memory
 {
   void CopyBytes(void* const dst, const void* const src, const MemoryIndex num_bytes);
   void SetBytes(void* const dst, const byte value, const MemoryIndex num_bytes);
+}
+
+// Lifetime Utilities
+
+namespace Memory
+{
+  template<typename T>
+  constexpr void Destruct(T* const ptr)
+  {
+    ptr->~T();
+  }
+
+   template<typename T>
+  constexpr void Destruct(T* const elements, const MemoryIndex n)
+  {
+    for (MemoryIndex i = 0; i < n; ++i)
+    {
+      Destruct(elements + i);
+    }
+  }
+
+  template<typename T>
+  constexpr void DestructAs(void* const ptr)
+  {
+    Destruct(static_cast<T*>(ptr));
+  }
+
+  template<typename T>
+  constexpr void DestructRange(T* const range_bgn, const T* const range_end)
+  {
+    for (T* element = range_bgn; element != range_end; ++element)
+    {
+      Destruct(element);
+    }
+  }
+}  // namespace Memory
+
+//
+
+namespace Memory
+{
+
 }
 
 #endif  // LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP

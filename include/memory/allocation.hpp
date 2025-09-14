@@ -30,7 +30,7 @@ namespace Memory
   {
     for (T* element = range_bgn; element != range_end; ++element)
     {
-      new (element) T;
+      ::new (element) T;
     }
   }
 
@@ -39,7 +39,7 @@ namespace Memory
   {
     for (T* element = range_bgn; element != range_end; ++element)
     {
-      new (element) T();
+      ::new (element) T();
     }
   }
 
@@ -47,27 +47,6 @@ namespace Memory
   T* Construct(void* const memory, Args&&... args)
   {
     return memory ? ::new (memory) T(std::forward<Args>(args)...) : nullptr;
-  }
-
-  template<typename T>
-  constexpr void Destruct(T* const ptr)
-  {
-    ptr->~T();
-  }
-
-  template<typename T>
-  constexpr void DestructAs(void* const ptr)
-  {
-    Destruct(static_cast<T*>(ptr));
-  }
-
-  template<typename T>
-  constexpr void DestructRange(T* const range_bgn, const T* const range_end)
-  {
-    for (T* element = range_bgn; element != range_end; ++element)
-    {
-      Destruct(element);
-    }
   }
 
 }  // namespace Memory

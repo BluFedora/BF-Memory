@@ -13,8 +13,9 @@
 #include "memory/alignment.hpp"   // AlignPointer
 #include "memory/allocation.hpp"  // Allocation API
 
+#include <algorithm>    // move_backward
 #include <iterator>     // make_reverse_iterator
-#include <memory>       // uninitialized_move
+#include <memory>       // uninitialized_move, uninitialized_move_n, destroy
 #include <type_traits>  // is_trivially_destructible_v
 
 namespace bf
@@ -52,6 +53,47 @@ DstIterator MemUninitializedMoveRev(SrcIterator src_bgn, SrcIterator src_end, Ds
           std::make_reverse_iterator(src_bgn),
           std::make_reverse_iterator(dst_end))
    .base();
+}
+
+namespace Memory
+{
+  // NOTE(SR): Assumes the buffer capacity >= (length + num_elements).
+  template<typename T>
+  T* InsertRange(T* const buffer, const MemoryIndex length, const MemoryIndex index, const MemoryIndex num_elements)
+  {
+    MemAssert(index <= length, "Invalid index.");
+
+    // TODO(SR): Add optimized path for trivial types.
+
+    const MemoryIndex total_elements_to_move  = length - index;
+    const MemoryIndex num_uninitialized_moves = (total_elements_to_move < num_elements) ? total_elements_to_move : num_elements;
+
+    T* const initialized_move_src_bgn = buffer + index;
+    T* const initialized_move_src_end = buffer + (length - num_uninitialized_moves);
+    T* const initialized_move_dst_end = initialized_move_src_end + num_elements;
+
+    std::uninitialized_move_n(initialized_move_src_end, num_uninitialized_moves, initialized_move_dst_end);
+    std::move_backward(initialized_move_src_bgn, initialized_move_src_end, initialized_move_dst_end);
+    std::destroy_n(initialized_move_src_bgn, num_uninitialized_moves);
+
+    return initialized_move_src_bgn;
+  }
+
+  template<typename T>
+  void RemoveRange(T* const buffer, const MemoryIndex length, const MemoryIndex index, const MemoryIndex num_elements)
+  {
+    MemAssert((index + num_elements) <= length, "Invalid range.");
+
+    // TODO(SR): Add optimized path for trivial types.
+
+    T* const removed_bgn = buffer + index;
+    T* const removed_end = removed_bgn + num_elements;
+    T* const tail_end    = buffer + length;
+    T* const destroy_bgn = tail_end - num_elements;
+
+    std::move(removed_end, tail_end, removed_bgn);
+    std::destroy(destroy_bgn, tail_end);
+  }
 }
 
 #endif /* LibFoundation_Memory_API_HPP */
