@@ -14,7 +14,6 @@
 #include "memory/allocation.hpp"  // Allocation API
 
 #include <algorithm>    // move_backward
-#include <iterator>     // make_reverse_iterator
 #include <memory>       // uninitialized_move, uninitialized_move_n, destroy
 #include <type_traits>  // is_trivially_destructible_v
 
@@ -29,6 +28,12 @@ namespace bf
   inline constexpr bool is_trivially_relocatable_v = is_trivially_relocatable<T>::value;
 }  // namespace bf
 
+template<typename SrcIterator, typename DstIterator>
+DstIterator MemUninitializedMove(SrcIterator src_bgn, SrcIterator src_end, DstIterator dst_bgn)
+{
+  return std::uninitialized_move(src_bgn, src_end, dst_bgn);
+}
+
 namespace Memory
 {
   template<typename T>
@@ -37,26 +42,7 @@ namespace Memory
     static_assert(!std::is_pointer_v<T>, "Pointer values should be assigned to nullptr explicitly.");
     SetBytes(object, 0x0, sizeof(T));
   }
-}  // namespace Memory
 
-template<typename SrcIterator, typename DstIterator>
-DstIterator MemUninitializedMove(SrcIterator src_bgn, SrcIterator src_end, DstIterator dst_bgn)
-{
-  return std::uninitialized_move(src_bgn, src_end, dst_bgn);
-}
-
-template<typename SrcIterator, typename DstIterator>
-DstIterator MemUninitializedMoveRev(SrcIterator src_bgn, SrcIterator src_end, DstIterator dst_end)
-{
-  return MemUninitializedMove(
-          std::make_reverse_iterator(src_end),
-          std::make_reverse_iterator(src_bgn),
-          std::make_reverse_iterator(dst_end))
-   .base();
-}
-
-namespace Memory
-{
   // NOTE(SR): Assumes the buffer capacity >= (length + num_elements).
   template<typename T>
   T* InsertRange(T* const buffer, const MemoryIndex length, const MemoryIndex index, const MemoryIndex num_elements)
