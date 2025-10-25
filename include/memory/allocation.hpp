@@ -26,7 +26,7 @@ namespace Memory
   };
 
   template<typename T>
-  constexpr void DefaultConstructRange(T* const range_bgn, const T* const range_end)
+  inline constexpr void DefaultConstructRange(T* const range_bgn, const T* const range_end)
   {
     for (T* element = range_bgn; element != range_end; ++element)
     {
@@ -35,7 +35,7 @@ namespace Memory
   }
 
   template<typename T>
-  constexpr void ValueConstructRange(T* const range_bgn, const T* const range_end)
+  inline constexpr void ValueConstructRange(T* const range_bgn, const T* const range_end)
   {
     for (T* element = range_bgn; element != range_end; ++element)
     {
@@ -44,9 +44,10 @@ namespace Memory
   }
 
   template<typename T, typename... Args>
-  T* Construct(void* const memory, Args&&... args)
+  inline T* Construct(void* const memory, Args&&... args)
   {
-    return memory ? ::new (memory) T(std::forward<Args>(args)...) : nullptr;
+    //return memory ? ::new (memory) T(std::forward<Args>(args)...) : nullptr;
+    return ::new (memory) T(std::forward<Args>(args)...);
   }
 
 }  // namespace Memory
@@ -78,7 +79,7 @@ namespace Memory
  * @see MemDeallocate
  */
 template<typename AllocatorConcept>
-AllocationResult MemAllocate(AllocatorConcept&& allocator, const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg())
+inline AllocationResult MemAllocate(AllocatorConcept&& allocator, const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg())
 {
   if (size != 0)
   {
@@ -110,7 +111,7 @@ AllocationResult MemAllocate(AllocatorConcept&& allocator, const MemoryIndex siz
  * @see MemAllocate
  */
 template<typename AllocatorConcept>
-void MemDeallocate(AllocatorConcept&& allocator, void* const ptr, const MemoryIndex size, const MemoryIndex alignment)
+inline void MemDeallocate(AllocatorConcept&& allocator, void* const ptr, const MemoryIndex size, const MemoryIndex alignment)
 {
   allocator.Deallocate(ptr, size, alignment);
 }
@@ -153,7 +154,7 @@ struct AllocatorWithSourceInfo
  *   On Failure: nullptr.
  */
 template<typename T, typename... Args>
-T* MemAllocateT(const AllocatorWithSourceInfo a, Args&&... args)
+inline T* MemAllocateT(const AllocatorWithSourceInfo a, Args&&... args)
 {
   return Memory::Construct<T>(MemAllocate(a.allocator, sizeof(T), alignof(T), a.source_info), std::forward<Args>(args)...);
 }
@@ -171,7 +172,7 @@ T* MemAllocateT(const AllocatorWithSourceInfo a, Args&&... args)
  * @param ptr
  */
 template<typename T, typename AllocatorConcept>
-void MemDeallocateT(AllocatorConcept&& allocator, T* const ptr)
+inline void MemDeallocateT(AllocatorConcept&& allocator, T* const ptr)
 {
   if (ptr != nullptr)
   {
@@ -213,7 +214,7 @@ void MemDeallocateT(AllocatorConcept&& allocator, T* const ptr)
  * @see Memory::ArrayConstruct
  */
 template<typename T, Memory::ArrayConstruct init = Memory::ArrayConstruct::UNINITIALIZE, typename AllocatorConcept>
-T* MemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T), const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg())
+inline T* MemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T), const AllocationSourceInfo& source_info = MemoryMakeAllocationSourceInfoDefaultArg())
 {
   const AllocationResult mem_block = MemAllocate(allocator, sizeof(T) * num_elements, alignment, source_info);
 
@@ -259,7 +260,7 @@ T* MemAllocateArray(AllocatorConcept&& allocator, const MemoryIndex num_elements
  * @see MemAllocateArray
  */
 template<typename T, typename AllocatorConcept>
-void MemDeallocateArray(AllocatorConcept&& allocator, T* const array, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T))
+inline void MemDeallocateArray(AllocatorConcept&& allocator, T* const array, const MemoryIndex num_elements, const MemoryIndex alignment = alignof(T))
 {
   if (array && num_elements)
   {

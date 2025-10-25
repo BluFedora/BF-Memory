@@ -22,7 +22,7 @@ struct CxxFreeStoreAllocator
   {
     (void)source_info;
 
-    std::printf("[Memory] Allocation from %s:%s(%u) (size = %zu).\n", source_info.file, source_info.function, source_info.line, size);
+    // std::printf("[Memory] Allocation from %s:%s(%u) (size = %zu).\n", source_info.file, source_info.function, source_info.line, size);
 
     void* const ptr = ::operator new(size, std::align_val_t{alignment}, std::nothrow);
 

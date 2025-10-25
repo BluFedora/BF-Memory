@@ -481,6 +481,8 @@ struct Allocator : public IPolymorphicAllocator,
         const MemoryIndex user_memory_size = *reinterpret_cast<const MemoryIndex*>(size_header);
         byte* const       guard_bytes_back = mark_bytes + user_memory_size;
 
+        MemAssert(user_memory_size == size, "Size header corruption.");
+
         Memory::CheckGuardBytes<BoundCheck>(guard_bytes_front, guard_size);
         Memory::CheckGuardBytes<BoundCheck>(guard_bytes_back, guard_size);
       }
@@ -505,13 +507,13 @@ namespace Memory
 namespace Memory
 {
   template<typename T>
-  constexpr void Destruct(T* const ptr)
+  inline constexpr void Destruct(T* const ptr)
   {
     ptr->~T();
   }
 
-   template<typename T>
-  constexpr void Destruct(T* const elements, const MemoryIndex n)
+  template<typename T>
+  inline constexpr void Destruct(T* const elements, const MemoryIndex n)
   {
     for (MemoryIndex i = 0; i < n; ++i)
     {
@@ -520,13 +522,13 @@ namespace Memory
   }
 
   template<typename T>
-  constexpr void DestructAs(void* const ptr)
+  inline constexpr void DestructAs(void* const ptr)
   {
     Destruct(static_cast<T*>(ptr));
   }
 
   template<typename T>
-  constexpr void DestructRange(T* const range_bgn, const T* const range_end)
+  inline constexpr void DestructRange(T* const range_bgn, const T* const range_end)
   {
     for (T* element = range_bgn; element != range_end; ++element)
     {
