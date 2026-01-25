@@ -154,9 +154,9 @@ struct AllocatorWithSourceInfo
  *   On Failure: nullptr.
  */
 template<typename T, typename... Args>
-inline T* MemAllocateT(const AllocatorWithSourceInfo a, Args&&... args)
+inline T* MemAllocateT(const AllocatorWithSourceInfo& allocator, Args&&... args)
 {
-  return Memory::Construct<T>(MemAllocate(a.allocator, sizeof(T), alignof(T), a.source_info), std::forward<Args>(args)...);
+  return Memory::Construct<T>(MemAllocate(allocator.allocator, sizeof(T), alignof(T), allocator.source_info), std::forward<Args>(args)...);
 }
 
 /*!
