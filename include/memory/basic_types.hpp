@@ -5,7 +5,7 @@
  * @brief
  *   Defines the basic types shared though out the library.
  *
- * @copyright Copyright (c) 2023-2025 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2023-2026 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP
@@ -319,15 +319,15 @@ struct MemoryTrackDeallocate
 
 namespace Memory
 {
-  static constexpr AllocationMarkPolicy DefaultMarkPolicy           = BF_MEMORY_ASSERTIONS != 0 ? AllocationMarkPolicy::MARKED : AllocationMarkPolicy::UNMARKED;
-  static constexpr BoundCheckingPolicy  DefaultBoundsCheckingPolicy = BF_MEMORY_ASSERTIONS != 0 ? BoundCheckingPolicy::CHECKED : BoundCheckingPolicy::UNCHECKED;
+  inline constexpr AllocationMarkPolicy DefaultMarkPolicy           = BF_MEMORY_ASSERTIONS != 0 ? AllocationMarkPolicy::MARKED : AllocationMarkPolicy::UNMARKED;
+  inline constexpr BoundCheckingPolicy  DefaultBoundsCheckingPolicy = BF_MEMORY_ASSERTIONS != 0 ? BoundCheckingPolicy::CHECKED : BoundCheckingPolicy::UNCHECKED;
 
-  static constexpr byte GuardBytePattern     = 0xAB;
-  static constexpr byte AllocatedBytePattern = 0xCD;
-  static constexpr byte FreeBytePattern      = 0xDD;
+  inline constexpr byte GuardBytePattern     = 0xAB;
+  inline constexpr byte AllocatedBytePattern = 0xCD;
+  inline constexpr byte FreeBytePattern      = 0xDD;
 
   template<BoundCheckingPolicy BoundCheck>
-  void GuardBytes(byte* const bytes, const MemoryIndex num_bytes) noexcept
+  constexpr void GuardBytes(byte* const bytes, const MemoryIndex num_bytes) noexcept
   {
     if constexpr (BoundCheck == BoundCheckingPolicy::CHECKED)
     {
@@ -339,7 +339,7 @@ namespace Memory
   }
 
   template<BoundCheckingPolicy BoundCheck>
-  void CheckGuardBytes(const byte* const bytes, const MemoryIndex num_bytes) noexcept
+  constexpr void CheckGuardBytes(const byte* const bytes, const MemoryIndex num_bytes) noexcept
   {
     if constexpr (BoundCheck == BoundCheckingPolicy::CHECKED)
     {
@@ -351,7 +351,7 @@ namespace Memory
   }
 
   template<AllocationMarkPolicy MarkPolicy>
-  void MarkAllocatedBytes(byte* const bytes, const MemoryIndex num_bytes) noexcept
+  constexpr void MarkAllocatedBytes(byte* const bytes, const MemoryIndex num_bytes) noexcept
   {
     if constexpr (MarkPolicy == AllocationMarkPolicy::MARKED)
     {
@@ -363,7 +363,7 @@ namespace Memory
   }
 
   template<AllocationMarkPolicy MarkPolicy>
-  void MarkFreedBytes(byte* const bytes, const MemoryIndex num_bytes) noexcept
+  constexpr void MarkFreedBytes(byte* const bytes, const MemoryIndex num_bytes) noexcept
   {
     if constexpr (MarkPolicy == AllocationMarkPolicy::MARKED)
     {
@@ -405,7 +405,6 @@ struct Allocator : public IPolymorphicAllocator,
                    public BaseAllocator,
                    public AllocationTrackingPolicy
 {
-  static constexpr bool MemoryMarkingEnabled = MarkPolicy != AllocationMarkPolicy::UNMARKED;
   static constexpr bool BoundCheckingEnabled = BoundCheck != BoundCheckingPolicy::UNCHECKED;
 
   template<typename... Args>
@@ -537,20 +536,13 @@ namespace Memory
   }
 }  // namespace Memory
 
-//
-
-namespace Memory
-{
-
-}
-
 #endif  // LIB_FOUNDATION_MEMORY_BASIC_TYPES_HPP
 
 /******************************************************************************/
 /*
   MIT License
 
-  Copyright (c) 2023-2025 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2026 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
