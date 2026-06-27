@@ -106,6 +106,9 @@ namespace Memory
 template<typename T>
 using SharedPtr = std::shared_ptr<T>;
 
+template<typename T>
+using WeakPtr = std::weak_ptr<T>;
+
 template<typename T, typename AllocatorConcept, typename = std::enable_if_t<!std::is_array_v<T>>, typename... Args>
 SharedPtr<T> bfMemMakeShared(AllocatorConcept* allocator, Args&&... args)
 {
