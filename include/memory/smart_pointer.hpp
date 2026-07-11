@@ -167,6 +167,35 @@ SharedPtr<T> bfMemMakeShared(AllocatorConcept* const allocator, const MemoryInde
   return memory ? SharedPtr<T>(memory, std::move(deleter), Memory::StlAllocator<element_type, AllocatorConcept>(*allocator)) : nullptr;
 }
 
+namespace Memory
+{
+  template<typename T, typename AllocatorConcept, typename... Args>
+  SharedPtr<T> MakeSharedVLA(AllocatorConcept* const allocator, MemoryIndex* const out_vla_offset, const MemoryRequirements vla_size_align, Args&&... args)
+  {
+    MemoryRequirements size_align{};
+    size_align.Append<T>();
+    const MemoryIndex vla_offset = size_align.Append(vla_size_align);
+
+    byte* const memory = MemAllocateArray<byte>(*allocator, size_align.size, size_align.alignment);
+
+    if (memory != nullptr)
+    {
+      auto deleter = [allocator, size_align](T* const ptr) {
+        Memory::Destruct(ptr);
+        MemDeallocateArray(*allocator, ptr, size_align.size, size_align.alignment);
+      };
+
+      T* const ptr = Memory::Construct<T>(memory, std::forward<Args>(args)...);
+
+      *out_vla_offset = vla_offset;
+
+      return SharedPtr<T>(ptr, std::move(deleter), Memory::StlAllocator<T, AllocatorConcept>(*allocator));
+    }
+
+    return nullptr;
+  }
+}
+
 // https://devblogs.microsoft.com/oldnewthing/20230818-00/?p=108619
 
 template<typename T, typename U>
