@@ -85,7 +85,7 @@ void Memory::MT_PoolSource::EnsurePoolHasItems(MT_Pool* const pool)
 {
   const MemoryIndex batch_size = pool->m_BatchSize;
 
-  // Fast Path is only having to souch this allocator every `batch_size` items.
+  // Fast Path is only having to touch this allocator every `batch_size` items.
   while (pool->m_BgnIndex == pool->m_EndIndex)
   {
     Slab* const active_slab = m_ActiveSlab.load(std::memory_order_acquire);
