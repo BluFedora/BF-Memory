@@ -41,10 +41,9 @@ using HeapAllocator = Allocator<CxxFreeStoreAllocator, AllocationMarkPolicy::MAR
 using HeapAllocator = Allocator<CxxFreeStoreAllocator, AllocationMarkPolicy::UNMARKED, BoundCheckingPolicy::UNCHECKED, Memory::NoMemoryTracking>;
 #endif
 
-static HeapAllocator s_DefaultHeap = {};
-
 IPolymorphicAllocator& Memory::DefaultHeap() noexcept
 {
+  static HeapAllocator s_DefaultHeap = {};
   return s_DefaultHeap;
 }
 
