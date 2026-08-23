@@ -64,7 +64,7 @@ struct MemoryRequirements
   {
   }
 
-  // Setup API
+  // Returns the offset in the buffer that this element(s) would be located at.
 
   template<typename T>
   constexpr MemoryIndex Append(const MemoryIndex element_count = 1u, const MemoryIndex element_alignment = alignof(T)) noexcept
@@ -72,8 +72,10 @@ struct MemoryRequirements
     return Append(sizeof(T), element_count, element_alignment);
   }
 
-  // Returns the offset in the buffer that this element(s) would be located at.
-  // constexpr MemoryIndex Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept;
+  constexpr MemoryIndex Append(const MemoryRequirements mem_reqs, const MemoryIndex element_count = 1u) noexcept
+  {
+    return Append(mem_reqs.size, element_count, mem_reqs.alignment);
+  }
 
   constexpr MemoryIndex Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
   {
@@ -95,11 +97,6 @@ struct MemoryRequirements
     alignment = (element_alignment > alignment) ? element_alignment : alignment;
 
     return allocation_offset;
-  }
-
-  constexpr MemoryIndex Append(const MemoryRequirements mem_reqs, const MemoryIndex element_count = 1u) noexcept
-  {
-    return Append(mem_reqs.size, element_count, mem_reqs.alignment);
   }
 
   // Only needed if you want to have multiple `MemoryRequirements` sized buffers consecutively in memory.
@@ -129,6 +126,47 @@ struct MemoryRequirements
   }
 
   static void* Alloc(void** buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept;
+};
+
+struct SizeAlignAlloc
+{
+  const MemoryRequirements expected_size_align{};
+  MemoryRequirements       current_size_align{};
+  void* const              buffer;
+
+  constexpr SizeAlignAlloc(void* const buffer, const MemoryRequirements& size_align) :
+    expected_size_align{size_align},
+    current_size_align{},
+    buffer{buffer}
+  {
+    MemAssert(expected_size_align.IsBufferValid(buffer), "Buffer not aligned.");
+  }
+
+  template<typename T>
+  constexpr T* Append(const MemoryIndex element_count = 1u, const MemoryIndex element_alignment = alignof(T)) noexcept
+  {
+    return static_cast<T*>(Append(sizeof(T), element_count, element_alignment));
+  }
+
+  constexpr void* Append(const MemoryRequirements mem_reqs, const MemoryIndex element_count = 1u) noexcept
+  {
+    return Append(mem_reqs.size, element_count, mem_reqs.alignment);
+  }
+
+  constexpr void* Append(const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
+  {
+    const MemoryIndex offset = current_size_align.Append(element_size, element_count, element_alignment);
+
+    MemAssert(offset < expected_size_align.size, "");
+
+    return static_cast<byte*>(buffer) + offset;
+  }
+
+  void End() const
+  {
+    MemAssert(current_size_align.size == expected_size_align.size, "");
+    MemAssert(current_size_align.alignment == expected_size_align.alignment, "");
+  }
 };
 
 // TODO(SR): Remove Me.
