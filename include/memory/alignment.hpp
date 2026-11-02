@@ -18,27 +18,26 @@
 
 namespace Memory
 {
-  inline constexpr MemoryIndex DefaultMallocAlignment = alignof(std::max_align_t); //!< The (minimum) alignment a pointer from malloc will have.
+  inline constexpr MemoryIndex DefaultMallocAlignment = alignof(std::max_align_t);  //!< The (minimum) alignment a pointer from malloc will have.
 
 #if defined(__STDCPP_DEFAULT_NEW_ALIGNMENT__)
-  inline constexpr MemoryIndex DefaultNewAlignment = __STDCPP_DEFAULT_NEW_ALIGNMENT__; //!< The alignment a pointer from new will have.
+  inline constexpr MemoryIndex DefaultNewAlignment = __STDCPP_DEFAULT_NEW_ALIGNMENT__;  //!< The alignment a pointer from new will have.
 #else
-  inline constexpr MemoryIndex DefaultNewAlignment = DefaultMallocAlignment; //!< The alignment a pointer from new will have.
+  inline constexpr MemoryIndex DefaultNewAlignment = DefaultMallocAlignment;  //!< The alignment a pointer from new will have.
 #endif
 
-
-  inline constexpr MemoryIndex DefaultAlignment = DefaultMallocAlignment < DefaultNewAlignment ? DefaultNewAlignment : DefaultMallocAlignment; //!< An address aligned to this value can support any non-overaligned datatype.
+  inline constexpr MemoryIndex DefaultAlignment = DefaultMallocAlignment < DefaultNewAlignment ? DefaultNewAlignment : DefaultMallocAlignment;  //!< An address aligned to this value can support any non-overaligned datatype.
 
   /*!
    * @brief
    *   Returns if \p alignment is valid to be used for alignment of memory addresses.
-   * 
+   *
    * @param alignment
    *   The value to be checking.
-   * 
+   *
    * @return
    *   true of \p alignment is a non-zero power of two.
-  */
+   */
   constexpr bool IsValidAlignment(const MemoryIndex alignment) noexcept
   {
     return alignment > 0 && (alignment & (alignment - 1)) == 0;
@@ -47,16 +46,16 @@ namespace Memory
   /*!
    * @brief
    *   returns if \p size is a multiple of \p alignment.
-   * 
+   *
    * @param size
    *   The size to be checking.
-   * 
+   *
    * @param alignment
    *   Must be a non-zero power of two.
-   * 
+   *
    * @return
    *   true if \p size is aligned to \p alignment, false otherwise.
-  */
+   */
   constexpr MemoryIndex IsSizeAligned(const MemoryIndex size, const MemoryIndex alignment) noexcept
   {
     MemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
@@ -84,6 +83,15 @@ namespace Memory
     const MemoryIndex required_alignment_mask = alignment - 1;
 
     return size + required_alignment_mask & ~required_alignment_mask;
+  }
+
+  constexpr MemoryIndex AlignSizeDown(const MemoryIndex size, const MemoryIndex alignment) noexcept
+  {
+    MemAssert(IsValidAlignment(alignment), "The alignment (%zu) must be a non-zero power of two.", alignment);
+
+    const MemoryIndex required_alignment_mask = alignment - 1;
+
+    return size & ~required_alignment_mask;
   }
 
   bool IsPointerAligned(const void* const ptr, const MemoryIndex alignment) noexcept;

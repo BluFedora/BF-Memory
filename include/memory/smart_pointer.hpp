@@ -5,7 +5,7 @@
  * @brief
  *   Helpers for creating smart pointers with custom allocators.
  *
- * @copyright Copyright (c) 2023-2024 Shareef Abdoul-Raheem
+ * @copyright Copyright (c) 2023-2026 Shareef Abdoul-Raheem
  */
 /******************************************************************************/
 #ifndef LIB_FOUNDATION_MEMORY_SMART_POINTER_HPP
@@ -87,7 +87,7 @@ namespace Memory
   template<typename T>
   struct UniquePtrDeleter : public BaseUniquePtrDeleter
   {
-    using pointer = std::remove_extent_t<T>*;  //!< Bounded array needs to redefine pointer type from T[N]* => T*.
+    using pointer = std::remove_extent_t<T>*;  //!< Bounded array needs to redefine pointer type from T[N] => T*.
 
     using BaseUniquePtrDeleter::BaseUniquePtrDeleter;
 
@@ -347,7 +347,7 @@ namespace Memory
 /*
   MIT License
 
-  Copyright (c) 2023-2024 Shareef Abdoul-Raheem
+  Copyright (c) 2023-2026 Shareef Abdoul-Raheem
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
