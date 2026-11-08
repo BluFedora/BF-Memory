@@ -63,9 +63,10 @@ namespace Memory
     MT_PoolSource(IPolymorphicAllocator& parent_allocator, const MemoryIndex object_size, const MemoryIndex object_align, const MemoryIndex slab_capacity);
     ~MT_PoolSource() noexcept;
 
+    void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
+
    private:
     void      EnsurePoolHasItems(MT_Pool* const pool);
-    void      PushFreeNode(FreeNode* const node);
     FreeNode* PopFreeNode();
   };
 
@@ -84,7 +85,8 @@ namespace Memory
     MT_Pool(MT_PoolSource* const source_pool, const MemoryIndex batch_size);
 
     AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info */) noexcept;
-    void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
+
+    inline void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept { m_Source->Deallocate(ptr, size, alignment); }
   };
 }  // namespace Memory
 

@@ -81,6 +81,23 @@ Memory::MT_PoolSource::~MT_PoolSource() noexcept
   }
 }
 
+void Memory::MT_PoolSource::Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
+{
+  const MemoryIndex object_size = m_ObjectSizeAlign.size;
+
+  MemAssert(size <= object_size, "Invalid object size");
+  MemAssert(alignment <= m_ObjectSizeAlign.alignment, "Invalid object alignment");
+
+  FreeNode* const node     = static_cast<Memory::MT_PoolSource::FreeNode*>(ptr);
+  FreeNode*       old_head = m_FreeNodesHead.load(std::memory_order_relaxed);
+
+  do
+  {
+    node->next = old_head;
+
+  } while (!m_FreeNodesHead.compare_exchange_weak(old_head, node, std::memory_order_release, std::memory_order_relaxed));
+}
+
 void Memory::MT_PoolSource::EnsurePoolHasItems(MT_Pool* const pool)
 {
   const MemoryIndex batch_size = pool->m_BatchSize;
@@ -137,17 +154,6 @@ void Memory::MT_PoolSource::EnsurePoolHasItems(MT_Pool* const pool)
   }
 }
 
-void Memory::MT_PoolSource::PushFreeNode(FreeNode* const node)
-{
-  FreeNode* old_head = m_FreeNodesHead.load(std::memory_order_relaxed);
-
-  do
-  {
-    node->next = old_head;
-
-  } while (!m_FreeNodesHead.compare_exchange_weak(old_head, node, std::memory_order_release, std::memory_order_relaxed));
-}
-
 Memory::MT_PoolSource::FreeNode* Memory::MT_PoolSource::PopFreeNode()
 {
   FreeNode* old_head = m_FreeNodesHead.load(std::memory_order_acquire);
@@ -192,14 +198,4 @@ AllocationResult Memory::MT_Pool::Allocate(const MemoryIndex size, const MemoryI
 
     return AllocationResult{result, object_size};
   }
-}
-
-void Memory::MT_Pool::Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept
-{
-  const MemoryIndex object_size = m_Source->m_ObjectSizeAlign.size;
-
-  MemAssert(size <= object_size, "Invalid object size");
-  MemAssert(alignment <= m_Source->m_ObjectSizeAlign.alignment, "Invalid object alignment");
-
-  m_Source->PushFreeNode(reinterpret_cast<Memory::MT_PoolSource::FreeNode*>(ptr));
 }
