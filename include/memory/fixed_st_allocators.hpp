@@ -51,7 +51,7 @@ namespace Memory
     void             Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
   };
 
-  inline LinearAllocator LinearAllocatorFromMemoryRequirements(void* const buffer, const MemoryRequirements mem_reqs)
+  inline LinearAllocator LinearAllocatorFromMemoryRequirements(void* const buffer, const SizeAlign mem_reqs)
   {
     MemAssert(mem_reqs.IsBufferValid(buffer), "Buffer improperly aligned.");
     return Memory::LinearAllocator{reinterpret_cast<byte*>(buffer), mem_reqs.size};

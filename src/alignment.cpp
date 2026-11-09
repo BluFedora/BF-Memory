@@ -59,22 +59,22 @@ void* Memory::StandardAlign(const MemoryIndex alignment, const MemoryIndex size,
   return nullptr;
 }
 
-void MemoryRequirements::AlignSizeToAlignment() noexcept
+void SizeAlign::AlignSizeToAlignment() noexcept
 {
   size = Memory::AlignSize(size, alignment);
 }
 
-bool MemoryRequirements::IsBufferValid(const void* const buffer, const MemoryIndex buffer_size) const noexcept
+bool SizeAlign::IsBufferValid(const void* const buffer, const MemoryIndex buffer_size) const noexcept
 {
   return buffer_size <= size && IsBufferValid(buffer);
 }
 
-bool MemoryRequirements::IsBufferValid(const void* const buffer) const noexcept
+bool SizeAlign::IsBufferValid(const void* const buffer) const noexcept
 {
   return Memory::IsPointerAligned(buffer, alignment);
 }
 
-void* MemoryRequirements::Alloc(void** buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
+void* SizeAlign::Alloc(void** buffer, const void* const buffer_end, const MemoryIndex element_size, const MemoryIndex element_count, const MemoryIndex element_alignment) noexcept
 {
   if (!WillMulOverflow(element_size, element_count))
   {
@@ -86,7 +86,7 @@ void* MemoryRequirements::Alloc(void** buffer, const void* const buffer_end, con
 
       if (buffer_end)
       {
-        MemAssert(*buffer <= buffer_end, "Not enough space in buffer, incorrect buffer size for the MemoryRequirements passed in.");
+        MemAssert(*buffer <= buffer_end, "Not enough space in buffer, incorrect buffer size for the SizeAlign passed in.");
       }
 
       return result;

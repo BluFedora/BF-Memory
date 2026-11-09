@@ -45,20 +45,20 @@ namespace Memory
  *   ```cpp
  *   constexpr MemoryIndex simd_sse_alignment = 16u;
  *
- *   MemoryRequirements mem_reqs = {};
+ *   SizeAlign mem_reqs = {};
  *   const MemoryIndex buffer0_offset = mem_reqs.Append<int>();
  *   const MemoryIndex buffer1_offset = mem_reqs.Append<char>(1999);
  *   const MemoryIndex buffer2_offset = mem_reqs.Append<float>(1, simd_sse_alignment);
  *   ```
  */
-struct MemoryRequirements
+struct SizeAlign
 {
   MemoryIndex size      = 0u;
   MemoryIndex alignment = alignof(byte);
 
-  constexpr MemoryRequirements() noexcept = default;
+  constexpr SizeAlign() noexcept = default;
 
-  constexpr MemoryRequirements(const MemoryIndex size, const MemoryIndex alignment) noexcept :
+  constexpr SizeAlign(const MemoryIndex size, const MemoryIndex alignment) noexcept :
     size{size},
     alignment{alignment}
   {
@@ -72,7 +72,7 @@ struct MemoryRequirements
     return Append(sizeof(T), element_count, element_alignment);
   }
 
-  constexpr MemoryIndex Append(const MemoryRequirements mem_reqs, const MemoryIndex element_count = 1u) noexcept
+  constexpr MemoryIndex Append(const SizeAlign mem_reqs, const MemoryIndex element_count = 1u) noexcept
   {
     return Append(mem_reqs.size, element_count, mem_reqs.alignment);
   }
@@ -130,11 +130,11 @@ struct MemoryRequirements
 
 struct SizeAlignAlloc
 {
-  const MemoryRequirements expected_size_align{};
-  MemoryRequirements       current_size_align{};
-  void* const              buffer;
+  const SizeAlign expected_size_align;
+  SizeAlign       current_size_align;
+  void* const     buffer;
 
-  constexpr SizeAlignAlloc(void* const buffer, const MemoryRequirements& size_align) :
+  constexpr SizeAlignAlloc(void* const buffer, const SizeAlign& size_align) :
     expected_size_align{size_align},
     current_size_align{},
     buffer{buffer}
@@ -148,7 +148,7 @@ struct SizeAlignAlloc
     return static_cast<T*>(Append(sizeof(T), element_count, element_alignment));
   }
 
-  constexpr void* Append(const MemoryRequirements mem_reqs, const MemoryIndex element_count = 1u) noexcept
+  constexpr void* Append(const SizeAlign mem_reqs, const MemoryIndex element_count = 1u) noexcept
   {
     return Append(mem_reqs.size, element_count, mem_reqs.alignment);
   }
@@ -169,11 +169,58 @@ struct SizeAlignAlloc
   }
 };
 
-// TODO(SR): Remove Me.
-template<typename TagType>
-struct TaggedMemoryRequirements : public MemoryRequirements
+/*
+    +---------------------------+ <-- Allocation Start
+    | Header (sizeof(Header))   |
+    +---------------------------+ <-- Header End
+    | Alignment Padding [0-255] |
+    +---------------------------+ <-- User Data - 1
+    | Stored Offset (sizeof(u8))|
+    +---------------------------+ <-- User Data Start
+    | User Data (user_data_size)|
+    +---------------------------+
+*/
+template<typename Header>
+struct SizeAlign_Header : public SizeAlign
 {
-  using MemoryRequirements::MemoryRequirements;
+  static constexpr MemoryIndex header_size      = sizeof(Header);
+  static constexpr MemoryIndex header_alignment = alignof(Header);
+
+  MemoryIndex user_data_offset : 64 - 8;
+  MemoryIndex stored_offset    : 8;
+
+  SizeAlign_Header(const MemoryIndex user_data_size, const MemoryIndex user_data_alignment) :
+    SizeAlign{user_data_size, header_alignment > user_data_alignment ? header_alignment : user_data_alignment},
+    user_data_offset{0},
+    stored_offset{0}
+  {
+    const bool        needs_offset = Memory::AlignSize(header_size, user_data_alignment) != header_size;
+    const MemoryIndex user_offset  = Memory::AlignSize(header_size + needs_offset, user_data_alignment);
+
+    this->size             += user_offset;
+    this->user_data_offset  = user_offset;
+    this->stored_offset     = user_offset - header_size - needs_offset;
+  }
+
+  Header* SetupAllocation(void* const allocation) const
+  {
+    if (user_data_offset != header_size)
+    {
+      static_cast<byte*>(allocation)[user_data_offset - sizeof(byte)] = stored_offset;
+    }
+
+    return reinterpret_cast<Header*>(allocation);
+  }
+
+  void* GetUserData(Header* const allocation) const { return reinterpret_cast<byte*>(allocation) + user_data_offset; }
+
+  static Header* HeaderFromUserData(void* const user_data, const MemoryIndex user_data_alignment)
+  {
+    const bool        needs_offset = Memory::AlignSize(header_size, user_data_alignment) != header_size;
+    const MemoryIndex offset       = needs_offset ? 1 + static_cast<MemoryIndex>(static_cast<byte*>(user_data)[-1]) : 0;
+
+    return reinterpret_cast<Header*>(static_cast<byte*>(user_data) - header_size - offset);
+  }
 };
 
 /*!

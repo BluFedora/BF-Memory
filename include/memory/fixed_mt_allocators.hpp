@@ -50,9 +50,9 @@ namespace Memory
 
    private:
     IPolymorphicAllocator&   m_ParentAllocator;
-    const MemoryRequirements m_ObjectSizeAlign;
+    const SizeAlign m_ObjectSizeAlign;
     const MemoryIndex        m_SlabCapacity;
-    MemoryRequirements       m_SlabSizeAlign;
+    SizeAlign       m_SlabSizeAlign;
     const MemoryIndex        m_ObjectOffset;
     std::atomic<Slab*>       m_ActiveSlab;
     Slab*                    m_AllSlabs;

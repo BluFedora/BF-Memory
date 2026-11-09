@@ -170,9 +170,9 @@ SharedPtr<T> bfMemMakeShared(AllocatorConcept* const allocator, const MemoryInde
 namespace Memory
 {
   template<typename T, typename AllocatorConcept, typename... Args>
-  SharedPtr<T> MakeSharedVLA(AllocatorConcept* const allocator, MemoryIndex* const out_vla_offset, const MemoryRequirements vla_size_align, Args&&... args)
+  SharedPtr<T> MakeSharedVLA(AllocatorConcept* const allocator, MemoryIndex* const out_vla_offset, const SizeAlign vla_size_align, Args&&... args)
   {
-    MemoryRequirements size_align{};
+    SizeAlign size_align{};
     size_align.Append<T>();
     const MemoryIndex vla_offset = size_align.Append(vla_size_align);
 
