@@ -46,7 +46,6 @@ namespace Memory
 
    private:
     struct Slab;
-    struct FreeNode;
 
    private:
     IPolymorphicAllocator& m_ParentAllocator;
@@ -57,17 +56,13 @@ namespace Memory
     std::atomic<Slab*>     m_ActiveSlab;
     Slab*                  m_AllSlabs;
     std::shared_mutex      m_GrowMutex;
-    std::atomic<FreeNode*> m_FreeNodesHead;
 
    public:
     MT_PoolSource(IPolymorphicAllocator& parent_allocator, const MemoryIndex object_size, const MemoryIndex object_align, const MemoryIndex slab_capacity);
     ~MT_PoolSource() noexcept;
 
-    void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
-
    private:
-    void      EnsurePoolHasItems(MT_Pool* const pool);
-    FreeNode* PopFreeNode();
+    void EnsurePoolHasItems(MT_Pool* const pool);
   };
 
   class MT_Pool
@@ -75,18 +70,22 @@ namespace Memory
     friend class MT_PoolSource;
 
    private:
+    struct FreeNode;
+
+   private:
     MT_PoolSource* const m_Source;
     const MemoryIndex    m_BatchSize;
     MT_PoolSource::Slab* m_Slab;
     MemoryIndex          m_BgnIndex;
     MemoryIndex          m_EndIndex;
+    FreeNode*            m_FreeNodesHead;
 
    public:
     MT_Pool(MT_PoolSource* const source_pool, const MemoryIndex batch_size);
 
     AllocationResult Allocate(const MemoryIndex size, const MemoryIndex alignment, const AllocationSourceInfo& /* source_info */) noexcept;
 
-    inline void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept { m_Source->Deallocate(ptr, size, alignment); }
+    void Deallocate(void* const ptr, const MemoryIndex size, const MemoryIndex alignment) noexcept;
   };
 }  // namespace Memory
 
