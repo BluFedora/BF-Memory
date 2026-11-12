@@ -49,15 +49,15 @@ namespace Memory
     struct FreeNode;
 
    private:
-    IPolymorphicAllocator&   m_ParentAllocator;
-    const SizeAlign m_ObjectSizeAlign;
-    const MemoryIndex        m_SlabCapacity;
-    SizeAlign       m_SlabSizeAlign;
-    const MemoryIndex        m_ObjectOffset;
-    std::atomic<Slab*>       m_ActiveSlab;
-    Slab*                    m_AllSlabs;
-    std::shared_mutex        m_GrowMutex;
-    std::atomic<FreeNode*>   m_FreeNodesHead;
+    IPolymorphicAllocator& m_ParentAllocator;
+    const SizeAlign        m_ObjectSizeAlign;
+    const MemoryIndex      m_SlabCapacity;
+    SizeAlign              m_SlabSizeAlign;
+    const MemoryIndex      m_ObjectOffset;
+    std::atomic<Slab*>     m_ActiveSlab;
+    Slab*                  m_AllSlabs;
+    std::shared_mutex      m_GrowMutex;
+    std::atomic<FreeNode*> m_FreeNodesHead;
 
    public:
     MT_PoolSource(IPolymorphicAllocator& parent_allocator, const MemoryIndex object_size, const MemoryIndex object_align, const MemoryIndex slab_capacity);
