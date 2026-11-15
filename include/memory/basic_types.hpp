@@ -381,6 +381,9 @@ enum class AllocationMarkPolicy : bool
   MARKED   = true,
 };
 
+/*!
+ * @brief When enabled every allocation is padded.
+ */
 enum class BoundCheckingPolicy : bool
 {
   UNCHECKED = false,
