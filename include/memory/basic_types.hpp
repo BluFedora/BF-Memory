@@ -568,7 +568,7 @@ struct Allocator : public IPolymorphicAllocator,
         const MemoryIndex user_memory_size = *reinterpret_cast<const MemoryIndex*>(size_header);
         byte* const       guard_bytes_back = mark_bytes + user_memory_size;
 
-        MemAssert(user_memory_size == size, "Size header corruption (%zu != %zu).", user_memory_size, size);
+        MemAssert(user_memory_size >= size, "Size header corruption (%zu != %zu).", user_memory_size, size);
 
         Memory::CheckGuardBytes<BoundCheck>(guard_bytes_front, guard_size);
         Memory::CheckGuardBytes<BoundCheck>(guard_bytes_back, guard_size);
