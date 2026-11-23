@@ -369,7 +369,7 @@ struct AllocatorView
   }
 
   template<>
-  static PolymorphicAllocatorFn TypeErasedAllocate<IPolymorphicAllocator>(IPolymorphicAllocator& allocator)
+  PolymorphicAllocatorFn TypeErasedAllocate<IPolymorphicAllocator>(IPolymorphicAllocator& allocator)
   {
     return allocator.allocate_fn;
   }

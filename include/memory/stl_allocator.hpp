@@ -140,7 +140,7 @@ namespace Memory
       static_assert(std::is_convertible_v<RhsAllocatorConcept *, AllocatorConcept *>, "Allocator types not convertable.");
     }
 
-    static [[nodiscard]] size_type max_size() noexcept { return static_cast<size_type>(-1) / sizeof(value_type); }
+    [[nodiscard]] static size_type max_size() noexcept { return static_cast<size_type>(-1) / sizeof(value_type); }
 
     [[nodiscard]] pointer           address(reference x) const noexcept { return &x; }
     [[nodiscard]] const_pointer     address(const_reference x) const noexcept { return &x; }
